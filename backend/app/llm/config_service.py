@@ -40,7 +40,6 @@ def _derive_fernet_key() -> bytes:
     """
     encryption_key = os.getenv("ENCRYPTION_KEY")
     if encryption_key:
-        # Validate that the provided key is usable by Fernet.
         try:
             Fernet(encryption_key.encode())
             return encryption_key.encode()
@@ -51,7 +50,8 @@ def _derive_fernet_key() -> bytes:
                 "'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
             ) from exc
 
-    secret_key = os.getenv("SECRET_KEY")
+    from app.config import settings
+    secret_key = settings.SECRET_KEY
     if not secret_key:
         raise RuntimeError(
             "Either ENCRYPTION_KEY or SECRET_KEY must be set to encrypt LLM API keys."
