@@ -99,6 +99,7 @@ def _clear_refresh_cookie(response: Response) -> None:
 )
 @limiter.limit("5/minute")
 async def login(
+    request: Request,
     body: LoginRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
     response: Response,
