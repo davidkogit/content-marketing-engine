@@ -13,6 +13,8 @@ from enum import Enum
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.models.user import UserRole
+
 
 # ── RoleDTO ─────────────────────────────────────────────────────────────────
 
@@ -38,6 +40,15 @@ ROLE_HIERARCHY: dict[RoleDTO, int] = {
     RoleDTO.SUPER_ADMIN: 3,
 }
 
+# Shared mapping from RoleDTO to ORM UserRole — used by auth, settings,
+# and dependencies modules to avoid duplication.
+_ROLE_DTO_TO_ORM: dict[RoleDTO, UserRole] = {
+    RoleDTO.SUPER_ADMIN: UserRole.SUPER_ADMIN,
+    RoleDTO.ADMIN: UserRole.ADMIN,
+    RoleDTO.EDITOR: UserRole.EDITOR,
+    RoleDTO.VIEWER: UserRole.VIEWER,
+}
+
 
 # ── Request Schemas ─────────────────────────────────────────────────────────
 
@@ -46,7 +57,8 @@ class RegisterRequest(BaseModel):
     """Request body for user registration.
 
     The email must be unique across the system. Password must be at least
-    8 characters. Role defaults to VIEWER when not specified.
+    8 characters. The role is always VIEWER for self-registration; higher
+    roles must be assigned via the invite flow by a super_admin.
     """
 
     email: EmailStr
@@ -55,10 +67,6 @@ class RegisterRequest(BaseModel):
         min_length=8,
         max_length=128,
         description="Plain-text password (8–128 characters).",
-    )
-    role: RoleDTO = Field(
-        default=RoleDTO.VIEWER,
-        description="Access role for the new account.",
     )
 
 
@@ -74,12 +82,15 @@ class LoginRequest(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    """Request body for token refresh."""
+    """Request body for token refresh.
 
-    refresh_token: str = Field(
-        ...,
-        min_length=1,
-        description="A previously issued refresh token.",
+    The refresh token is now primarily read from an HttpOnly cookie.
+    This field is retained for backward compatibility only.
+    """
+
+    refresh_token: str | None = Field(
+        default=None,
+        description="Deprecated: refresh token is now read from HttpOnly cookie.",
     )
 
 
@@ -87,10 +98,15 @@ class RefreshRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    """Response containing access and refresh tokens."""
+    """Response containing access token (and optionally refresh token).
+
+    In production the refresh_token is delivered via an HttpOnly cookie
+    rather than in the JSON body — the field is retained for backward
+    compatibility.
+    """
 
     access_token: str
-    refresh_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
 
 

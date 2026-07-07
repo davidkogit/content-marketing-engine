@@ -17,7 +17,7 @@ from sqlalchemy import func as sql_func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import require_role
-from app.auth.schemas import RoleDTO
+from app.auth.schemas import _ROLE_DTO_TO_ORM, RoleDTO
 from app.auth.user_service import UserService
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -36,13 +36,6 @@ router = APIRouter(prefix="/settings/users", tags=["settings"])
 # ── Singletons ──────────────────────────────────────────────────────────────
 
 _user_service = UserService()
-
-_ROLE_DTO_TO_ORM: dict[RoleDTO, UserRole] = {
-    RoleDTO.SUPER_ADMIN: UserRole.SUPER_ADMIN,
-    RoleDTO.ADMIN: UserRole.ADMIN,
-    RoleDTO.EDITOR: UserRole.EDITOR,
-    RoleDTO.VIEWER: UserRole.VIEWER,
-}
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -215,7 +208,9 @@ async def deactivate_user(
 
     The requesting super_admin **cannot deactivate themselves**.
     Additionally, the **last active super_admin** cannot be deactivated to
-    prevent total administrative lockout.
+    prevent total administrative lockout.  The TOCTOU race is eliminated
+    by deactivating first, flushing, and **then** checking the remaining
+    super_admin count — rolling back if the constraint is violated.
 
     Raises:
         HTTPException 403: If the caller attempts to deactivate themselves
@@ -230,7 +225,7 @@ async def deactivate_user(
             detail="You cannot deactivate your own account.",
         )
 
-    # Fetch target user first to check role before deactivating
+    # Fetch target user
     target_user = await _user_service.get_by_id(db, user_id)
     if target_user is None:
         raise HTTPException(
@@ -244,15 +239,10 @@ async def deactivate_user(
             detail="User is already deactivated.",
         )
 
-    # Guard: cannot deactivate last active super_admin
-    if target_user.role == UserRole.SUPER_ADMIN:
-        active_super_admin_count = await _count_active_super_admins(db)
-        if active_super_admin_count <= 1:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot deactivate the last active super_admin.",
-            )
+    # Remember whether target is a super_admin BEFORE deactivation
+    is_target_super_admin = target_user.role == UserRole.SUPER_ADMIN
 
+    # ── Deactivate FIRST ──────────────────────────────────────────────────
     try:
         user = await _user_service.deactivate_user(db, user_id)
     except ValueError as exc:
@@ -260,6 +250,19 @@ async def deactivate_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         )
+
+    # Flush so the deactivation is visible to the next query
+    await db.flush()
+
+    # ── THEN check remaining super_admins ─────────────────────────────────
+    if is_target_super_admin:
+        active_super_admin_count = await _count_active_super_admins(db)
+        if active_super_admin_count == 0:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot deactivate the last active super_admin.",
+            )
 
     logger.info(
         "Super admin id=%d deactivated user id=%d email=%r",

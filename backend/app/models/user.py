@@ -42,6 +42,10 @@ class User(Base):
         server_default=func.now(),
         nullable=False,
     )
+    token_version: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False,
+        doc="Incremented on refresh to invalidate all prior refresh tokens.",
+    )
 
     # ── Relationships ──────────────────────────────────────────────────
     documents_assigned: Mapped[list["ProductClaim"]] = relationship(

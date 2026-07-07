@@ -18,16 +18,15 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  role?: UserRole;
 }
 
 export interface RefreshRequest {
-  refresh_token: string;
+  refresh_token?: string;
 }
 
 export interface TokenResponse {
   access_token: string;
-  refresh_token: string;
+  refresh_token?: string;
   token_type: string;
 }
 

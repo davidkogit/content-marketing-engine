@@ -6,8 +6,8 @@
  * auth state via the useAuth() hook.
  *
  * Token storage and API calls are delegated to the existing lib modules:
- *   - lib/token-storage  (getAccessToken, setTokens, clearTokens)
- *   - lib/api-endpoints   (auth.login, auth.register, auth.me)
+ *   - lib/token-storage  (getAccessToken, setAccessToken, clearTokens)
+ *   - lib/api-endpoints   (auth.login, auth.register, auth.me, auth.logout)
  *
  * The Axios interceptor in lib/api-client handles silent token refresh
  * on 401 responses — this context only needs to handle the happy path.
@@ -23,7 +23,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "@/lib/api-endpoints";
-import { setTokens, clearTokens, hasAccessToken } from "@/lib/token-storage";
+import { setAccessToken, clearTokens, hasAccessToken } from "@/lib/token-storage";
 import type { User, UserRole } from "@/types/user";
 
 // ── Role Weights (lower number = higher privilege) ───────────────────────────
@@ -95,7 +95,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, role?: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hasRole: (minRole: UserRole) => boolean;
 }
@@ -158,9 +158,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       dispatch({ type: "AUTH_LOADING" });
 
       try {
-        // 1. Obtain token pair
+        // 1. Obtain access token (refresh token set as HttpOnly cookie by backend)
         const tokenResponse = await auth.login(email, password);
-        setTokens(tokenResponse.access_token, tokenResponse.refresh_token);
+        setAccessToken(tokenResponse.access_token);
 
         // 2. Fetch the user profile with the new token
         const user = await auth.me();
@@ -178,16 +178,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ── register() ───────────────────────────────────────────────────────────
 
   const register = useCallback(
-    async (email: string, password: string, role?: string): Promise<void> => {
+    async (email: string, password: string): Promise<void> => {
       dispatch({ type: "AUTH_LOADING" });
 
       try {
-        // /auth/register returns TokenResponse — auto-login on success.
-        // The optional `role` is threaded through to the API call so the
-        // backend can assign the appropriate role (viewer/editor for
-        // self-registration; admin+ requires invitation on the backend).
-        const tokenResponse = await auth.register(email, password, role);
-        setTokens(tokenResponse.access_token, tokenResponse.refresh_token);
+        // Self-registration always creates VIEWER accounts.
+        // The access token comes in the JSON body; refresh token is an HttpOnly cookie.
+        const tokenResponse = await auth.register(email, password);
+        setAccessToken(tokenResponse.access_token);
 
         // Fetch the user profile
         const user = await auth.me();
@@ -205,6 +203,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ── logout() ─────────────────────────────────────────────────────────────
 
   const logout = useCallback(() => {
+    // Clear the HttpOnly refresh cookie on the server side, then
+    // discard the in-memory access token and redirect to login.
+    auth.logout().catch(() => {
+      // Best-effort — proceed even if the server call fails
+    });
     clearTokens();
     dispatch({ type: "LOGOUT" });
     navigate("/login", { replace: true });

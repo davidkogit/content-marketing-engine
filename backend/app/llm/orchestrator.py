@@ -78,6 +78,41 @@ _task_store: dict[str, dict[str, Any]] = {}
 # Time-to-live for completed/failed task entries (seconds)
 _TASK_TTL = 3600  # 1 hour
 
+# ── Background cleanup of expired tasks ──────────────────────────────────────
+
+_cleanup_task: asyncio.Task | None = None
+"""Module-level reference to the background cleanup task."""
+
+
+async def _cleanup_expired_tasks() -> None:
+    """Periodically remove completed/failed tasks older than _TASK_TTL."""
+    while True:
+        await asyncio.sleep(300)  # Every 5 minutes
+        now = time.time()
+        expired = [
+            task_id
+            for task_id, entry in _task_store.items()
+            if entry["status"] in (TaskStatus.COMPLETED, TaskStatus.FAILED)
+            and (now - entry.get("created_at", 0)) > _TASK_TTL
+        ]
+        for task_id in expired:
+            del _task_store[task_id]
+        if expired:
+            logger.debug("Cleaned up %d expired task(s) from store", len(expired))
+
+
+def _ensure_cleanup_running() -> None:
+    """Start the background cleanup task if not already running."""
+    global _cleanup_task
+    if _cleanup_task is None:
+        try:
+            loop = asyncio.get_running_loop()
+            _cleanup_task = loop.create_task(_cleanup_expired_tasks())
+            logger.debug("Background TTL cleanup task started")
+        except RuntimeError:
+            # No event loop running yet — will be retried on first async call
+            pass
+
 
 # ── GenerationOrchestrator ───────────────────────────────────────────────────
 
@@ -211,6 +246,9 @@ class GenerationOrchestrator:
         task_id = str(uuid.uuid4())
         _task_store[task_id] = {"status": TaskStatus.PENDING, "result": None, "error": None, "created_at": time.time()}
 
+        # Ensure the background TTL cleanup coroutine is running
+        _ensure_cleanup_running()
+
         # Schedule background execution
         asyncio.create_task(
             self._run_background(task_id, db_factory, product_id, gen_type)
@@ -318,7 +356,7 @@ class GenerationOrchestrator:
             db.add(pc)
             count += 1
 
-        await db.flush()
+        await db.commit()
         logger.info(
             "Persisted %d claims for product_id=%d to audit trail",
             count,

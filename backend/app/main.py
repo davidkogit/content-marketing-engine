@@ -10,6 +10,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.auth.router import router as auth_router
 from app.products.segment_router import router as segments_router
@@ -21,6 +24,7 @@ from app.llm.generation_router import router as generation_router
 from app.settings.user_management_router import router as user_management_router
 from app.settings.brand_rules_router import router as brand_rules_router
 from app.settings.llm_router import router as settings_llm_router
+from app.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +54,11 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Rate limiting — global limiter with IP-based keys
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_middleware(SlowAPIMiddleware)
 
     # Mount API routers
     app.include_router(auth_router, prefix="/api/v1")

@@ -1,11 +1,9 @@
 /**
- * RegisterForm — email + password + confirm + role selector for
- * self-registration.
+ * RegisterForm — email + password + confirm for self-registration.
  *
- * Self-registration is limited to the **viewer** and **editor** roles.
+ * Self-registration always creates a VIEWER-role account.
  * Admin and Super Admin accounts are created via invitation only
- * (enforced on the backend).  The role selector reflects this constraint
- * by only offering those two options.
+ * (enforced on the backend).
  *
  * Handles:
  *  - Client-side validation (email format, password ≥ 8 chars, password
@@ -16,7 +14,7 @@
  *  - Redirect on success (via auth-context)
  */
 
-import { useState, useCallback, type FormEvent, type ChangeEvent } from "react";
+import { useCallback, type FormEvent, type ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { isAxiosError } from "axios";
@@ -24,13 +22,6 @@ import { isAxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -73,15 +64,7 @@ interface FieldErrors {
   email?: string;
   password?: string;
   confirm?: string;
-  role?: string;
 }
-
-// ── Role Options (self-register only) ────────────────────────────────────────
-
-const ROLE_OPTIONS = [
-  { value: "viewer", label: "Viewer — read-only access" },
-  { value: "editor", label: "Editor — create and edit content" },
-] as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -92,7 +75,6 @@ export function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [role, setRole] = useState("viewer"); // default to lowest privilege
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [apiError, setApiError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -183,11 +165,6 @@ export function RegisterForm() {
     [touched.confirm, password],
   );
 
-  const handleRoleChange = useCallback((value: string) => {
-    setRole(value);
-    setApiError(null);
-  }, []);
-
   // ── Run All Validations ────────────────────────────────────────────────────
 
   /** Validate every field. Returns true when the form is valid. */
@@ -214,9 +191,9 @@ export function RegisterForm() {
     setIsSubmitting(true);
 
     try {
-      // Pass the selected role to the auth context so the backend
-      // assigns the appropriate privilege level.
-      await register(email, password, role);
+      // All self-registrations create VIEWER-role accounts.
+      // Higher roles are assigned via the invite flow by super_admins.
+      await register(email, password);
       // On success, auth-context handles token storage + navigation.
     } catch (error: unknown) {
       if (isAxiosError(error)) {
@@ -370,30 +347,7 @@ export function RegisterForm() {
             )}
           </div>
 
-          {/* ── Role Selector ──────────────────────────────────────────── */}
-          <div className="space-y-2">
-            <Label htmlFor="register-role">Role</Label>
-            <Select
-              value={role}
-              onValueChange={handleRoleChange}
-              disabled={isSubmitting}
-            >
-              <SelectTrigger id="register-role" className="w-full">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {ROLE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Admin and Super Admin roles require an invitation.
-            </p>
-          </div>
-        </CardContent>
+          {/* ── Confirm Password Field ─────────────────────────────────── */}
 
         <CardFooter className="flex-col space-y-4">
           <Button

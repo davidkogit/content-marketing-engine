@@ -1,11 +1,12 @@
 """
-Auth API router — registration, login, token refresh, and profile endpoints.
+Auth API router — registration, login, token refresh, logout, and profile endpoints.
 
 Mounts under ``/auth`` and exposes:
-- ``POST /auth/register`` — create account, get tokens
-- ``POST /auth/login`` — authenticate, get tokens
+- ``POST /auth/register`` — create account, get access token + HttpOnly refresh cookie
+- ``POST /auth/login`` — authenticate, get access token + HttpOnly refresh cookie
 - ``GET  /auth/me`` — current user profile
-- ``POST /auth/refresh`` — exchange refresh token for new pair
+- ``POST /auth/refresh`` — exchange refresh cookie for new access token + cookie
+- ``POST /auth/logout`` — clear the refresh cookie
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
@@ -23,13 +24,13 @@ from app.auth.schemas import (
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
-    RoleDTO,
     TokenResponse,
     UserResponse,
 )
 from app.auth.user_service import UserService
 from app.database import get_db
 from app.models.user import User, UserRole
+from app.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +41,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 _jwt_service = JWTService()
 _user_service = UserService()
 
-_ROLE_DTO_TO_ORM: dict[RoleDTO, UserRole] = {
-    RoleDTO.SUPER_ADMIN: UserRole.SUPER_ADMIN,
-    RoleDTO.ADMIN: UserRole.ADMIN,
-    RoleDTO.EDITOR: UserRole.EDITOR,
-    RoleDTO.VIEWER: UserRole.VIEWER,
-}
+# ── Cookie constants ────────────────────────────────────────────────────────
+
+_REFRESH_COOKIE_KEY = "refresh_token"
+_REFRESH_COOKIE_PATH = "/api/v1/auth/refresh"
+_REFRESH_COOKIE_MAX_AGE = 604800  # 7 days in seconds
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -58,8 +58,29 @@ async def _issue_token_pair(user: User) -> TokenResponse:
         email=user.email,
         role=user.role.value,
     )
-    refresh_token = await _jwt_service.create_refresh_token(user_id=user.id)
+    refresh_token = await _jwt_service.create_refresh_token(
+        user_id=user.id,
+        token_version=user.token_version,
+    )
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+
+
+def _set_refresh_cookie(response: Response, token: str) -> None:
+    """Attach the refresh token as an HttpOnly, Secure, SameSite=Strict cookie."""
+    response.set_cookie(
+        key=_REFRESH_COOKIE_KEY,
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        path=_REFRESH_COOKIE_PATH,
+        max_age=_REFRESH_COOKIE_MAX_AGE,
+    )
+
+
+def _clear_refresh_cookie(response: Response) -> None:
+    """Remove the refresh token cookie."""
+    response.delete_cookie(key=_REFRESH_COOKIE_KEY, path=_REFRESH_COOKIE_PATH)
 
 
 # ── POST /auth/register ─────────────────────────────────────────────────────
@@ -71,30 +92,30 @@ async def _issue_token_pair(user: User) -> TokenResponse:
     status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
 )
+@limiter.limit("3/hour")
 async def register(
     body: RegisterRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
+    response: Response,
 ) -> TokenResponse:
-    """Create a new user account and return access + refresh tokens.
+    """Create a new user account and return an access token + HttpOnly refresh cookie.
 
-    The email must be unique across all accounts. Password must be at
-    least 8 characters. New accounts default to the VIEWER role unless
-    another role is explicitly requested.
+    Self-registration always creates a VIEWER-role account.  Higher roles
+    must be assigned via the invite flow by a super_admin.
 
     Returns:
-        A ``TokenResponse`` containing access and refresh tokens.
+        A ``TokenResponse`` with the access token.  The refresh token is
+        set as an HttpOnly cookie.
 
     Raises:
         HTTPException 409: If the email is already registered.
     """
-    orm_role = _ROLE_DTO_TO_ORM[body.role]
-
     try:
         user = await _user_service.create_user(
             db,
             email=body.email,
             password=body.password,
-            role=orm_role,
+            role=UserRole.VIEWER,
         )
     except ValueError as exc:
         raise HTTPException(
@@ -103,7 +124,10 @@ async def register(
         )
 
     logger.info("Registered new user id=%d email=%r", user.id, user.email)
-    return await _issue_token_pair(user)
+
+    token_pair = await _issue_token_pair(user)
+    _set_refresh_cookie(response, token_pair.refresh_token)
+    return TokenResponse(access_token=token_pair.access_token)
 
 
 # ── POST /auth/login ────────────────────────────────────────────────────────
@@ -114,34 +138,35 @@ async def register(
     response_model=TokenResponse,
     summary="Log in with email and password",
 )
+@limiter.limit("5/minute")
 async def login(
     body: LoginRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
+    response: Response,
 ) -> TokenResponse:
-    """Authenticate with email and password, returning tokens on success.
+    """Authenticate with email and password, returning an access token + HttpOnly refresh cookie.
 
     Uses constant-time bcrypt comparison to verify the password.
-    Deactivated accounts receive a 401 even with correct credentials.
+    A uniform error message is returned for all failure cases (unknown
+    email, wrong password, deactivated account) to prevent account
+    enumeration.
 
     Returns:
-        A ``TokenResponse`` with access and refresh tokens.
+        A ``TokenResponse`` with the access token.  The refresh token is
+        set as an HttpOnly cookie.
 
     Raises:
-        HTTPException 401: If email not found, password incorrect, or
-                           account deactivated.
+        HTTPException 401: On any authentication failure — always the same
+                           "Invalid email or password." message.
     """
     user = await _user_service.get_by_email(db, body.email)
 
-    if user is None:
+    # Always return the same error for non-existent users, deactivated
+    # accounts, and wrong passwords to prevent account enumeration.
+    if user is None or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
-        )
-
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Account is deactivated.",
         )
 
     if not verify_password(body.password, user.hashed_password):
@@ -151,7 +176,10 @@ async def login(
         )
 
     logger.info("User id=%d logged in", user.id)
-    return await _issue_token_pair(user)
+
+    token_pair = await _issue_token_pair(user)
+    _set_refresh_cookie(response, token_pair.refresh_token)
+    return TokenResponse(access_token=token_pair.access_token)
 
 
 # ── GET /auth/me ────────────────────────────────────────────────────────────
@@ -188,29 +216,44 @@ async def get_me(
     response_model=TokenResponse,
     summary="Refresh access token",
 )
+@limiter.limit("5/minute")
 async def refresh_tokens(
-    body: RefreshRequest,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
+    response: Response,
+    body: RefreshRequest | None = None,
 ) -> TokenResponse:
-    """Exchange a valid refresh token for a new access + refresh token pair.
+    """Exchange a valid refresh token (from HttpOnly cookie) for a new access token.
 
-    The incoming refresh token is verified, and the associated user is
-    confirmed to still exist and be active. A fresh token pair is then
-    issued.  The old refresh token is **not** explicitly blacklisted in
-    this v1 implementation — future versions may add a token blacklist
-    table for immediate revocation.
+    The refresh token is read from the ``refresh_token`` HttpOnly cookie.
+    On success the access token is returned in the response body and a
+    **new** refresh token is set as an HttpOnly cookie.  All prior
+    refresh tokens for this user are invalidated via ``token_version``
+    increment.
 
     Returns:
-        A ``TokenResponse`` with new access and refresh tokens.
+        A ``TokenResponse`` with the new access token.
 
     Raises:
-        HTTPException 401: If refresh token is expired, invalid, not a
-                           refresh-type token, or the user is not found
-                           / deactivated.
+        HTTPException 401: If the cookie is absent, the token is expired,
+                           invalid, or the user is not found / deactivated.
     """
+    # ── Extract refresh token from HttpOnly cookie ─────────────────────────
+    refresh_token: str | None = request.cookies.get(_REFRESH_COOKIE_KEY)
+
+    # Fallback to request body for backward compatibility
+    if not refresh_token and body and body.refresh_token:
+        refresh_token = body.refresh_token
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token is missing.",
+        )
+
     # ── Decode and validate the refresh token ──────────────────────────────
     try:
-        payload = await _jwt_service.decode_token(body.refresh_token)
+        payload = await _jwt_service.decode_token(refresh_token)
     except TokenExpiredError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -237,17 +280,47 @@ async def refresh_tokens(
 
     # ── Verify user still exists and is active ─────────────────────────────
     user = await _user_service.get_by_id(db, user_id)
-    if user is None:
+    if user is None or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found.",
+            detail="User not found or account deactivated.",
         )
 
-    if not user.is_active:
+    # ── Check token_version to detect invalidated tokens ───────────────────
+    claim_version: int = payload.get("token_version", 0)
+    if claim_version != user.token_version:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Account is deactivated.",
+            detail="Refresh token has been invalidated (token version mismatch).",
         )
 
-    logger.info("Refreshed tokens for user id=%d", user.id)
-    return await _issue_token_pair(user)
+    # ── Increment token_version to invalidate all prior refresh tokens ─────
+    user.token_version += 1
+    await db.commit()
+
+    logger.info("Refreshed tokens for user id=%d (version=%d)", user.id, user.token_version)
+
+    token_pair = await _issue_token_pair(user)
+    _set_refresh_cookie(response, token_pair.refresh_token)
+    return TokenResponse(access_token=token_pair.access_token)
+
+
+# ── POST /auth/logout ────────────────────────────────────────────────────────
+
+
+@router.post(
+    "/logout",
+    summary="Log out and clear refresh token cookie",
+)
+async def logout(
+    response: Response,
+) -> dict[str, str]:
+    """Clear the refresh token HttpOnly cookie.
+
+    The access token (stored in-memory on the frontend) will be discarded
+    by the client.  The refresh cookie is removed so no new tokens can be
+    obtained without re-authentication.
+    """
+    _clear_refresh_cookie(response)
+    logger.info("User logged out — refresh cookie cleared")
+    return {"message": "Logged out successfully."}

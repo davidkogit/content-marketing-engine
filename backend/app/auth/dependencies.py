@@ -17,8 +17,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.jwt_service import JWTService, TokenExpiredError, TokenInvalidError
-from app.auth.schemas import ROLE_HIERARCHY, RoleDTO
+from app.auth.schemas import ROLE_HIERARCHY, _ROLE_DTO_TO_ORM, RoleDTO
 from app.auth.user_service import UserService
+from app.config import settings
 from app.database import get_db
 from app.models.user import User, UserRole
 
@@ -29,17 +30,15 @@ logger = logging.getLogger(__name__)
 _bearer_scheme = HTTPBearer(auto_error=False)
 """Bearer scheme that does NOT auto-raise — we control the error response."""
 
-_jwt_service = JWTService()
-"""Module-level JWT service singleton."""
+_jwt_service = JWTService(access_token_expiry_minutes=settings.JWT_EXPIRY_MINUTES)
+"""Module-level JWT service singleton — wired to configured expiry."""
 
 _user_service = UserService()
 """Module-level user service singleton."""
 
-_USER_ROLE_DTO_MAP: dict[UserRole, RoleDTO] = {
-    UserRole.SUPER_ADMIN: RoleDTO.SUPER_ADMIN,
-    UserRole.ADMIN: RoleDTO.ADMIN,
-    UserRole.EDITOR: RoleDTO.EDITOR,
-    UserRole.VIEWER: RoleDTO.VIEWER,
+# Reverse mapping derived from the shared _ROLE_DTO_TO_ORM in schemas.
+_ORM_TO_ROLE_DTO: dict[UserRole, RoleDTO] = {
+    v: k for k, v in _ROLE_DTO_TO_ORM.items()
 }
 """Fast lookup from ORM UserRole enum to RoleDTO."""
 
@@ -49,7 +48,7 @@ _USER_ROLE_DTO_MAP: dict[UserRole, RoleDTO] = {
 
 def _map_role(role: UserRole) -> RoleDTO:
     """Map a UserRole ORM enum value to its corresponding RoleDTO."""
-    return _USER_ROLE_DTO_MAP[role]
+    return _ORM_TO_ROLE_DTO[role]
 
 
 # ── get_current_user ────────────────────────────────────────────────────────

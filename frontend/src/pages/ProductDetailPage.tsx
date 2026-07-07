@@ -81,6 +81,7 @@ export default function ProductDetailPage() {
     removeDocument,
     updateClaim,
     restoreVersion,
+    refresh,
   } = useProductDetail(productId);
 
   // ── Role checks ────────────────────────────────────────────────────────
@@ -116,8 +117,8 @@ export default function ProductDetailPage() {
           to_stage: toStage as WorkflowStage,
           comment: `Moved to ${toStage}`,
         });
-        // Reload product to reflect new stage after transition.
-        window.location.reload();
+        // Re-fetch product data to reflect the new workflow stage.
+        await refresh();
       } catch (err: unknown) {
         toast({
           title: "Transition failed",
@@ -127,7 +128,7 @@ export default function ProductDetailPage() {
         });
       }
     },
-    [product, toast],
+    [product, toast, refresh],
   );
 
   const handleUpdateClaim = useCallback(

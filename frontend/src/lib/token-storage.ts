@@ -1,44 +1,36 @@
 /**
- * Token storage helpers using localStorage.
+ * Token storage helpers — in-memory access token only.
  *
- * Wraps raw localStorage access behind typed get/set/clear helpers
- * so the rest of the app never touches localStorage directly.
+ * The refresh token is managed via an HttpOnly cookie set by the backend.
+ * Only the access token (short-lived JWT) is held in memory here.
  */
 
-const ACCESS_TOKEN_KEY = "cme_access_token";
-const REFRESH_TOKEN_KEY = "cme_refresh_token";
+let inMemoryAccessToken: string | null = null;
 
 // ── Getters ──────────────────────────────────────────────────────────────────
 
 /** Retrieve the stored access token (JWT), or null if not found. */
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
-}
-
-/** Retrieve the stored refresh token, or null if not found. */
-export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return inMemoryAccessToken;
 }
 
 // ── Setters ──────────────────────────────────────────────────────────────────
 
-/** Persist the access + refresh token pair to localStorage. */
-export function setTokens(accessToken: string, refreshToken: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+/** Store the access token in memory. */
+export function setAccessToken(accessToken: string): void {
+  inMemoryAccessToken = accessToken;
 }
 
 // ── Clear ────────────────────────────────────────────────────────────────────
 
-/** Remove both tokens from localStorage (e.g. on logout or refresh failure). */
+/** Remove the in-memory access token (e.g. on logout or refresh failure). */
 export function clearTokens(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  inMemoryAccessToken = null;
 }
 
 // ── Predicates ───────────────────────────────────────────────────────────────
 
-/** Returns true if an access token is present in storage. */
+/** Returns true if an access token is present in memory. */
 export function hasAccessToken(): boolean {
-  return getAccessToken() !== null;
+  return inMemoryAccessToken !== null;
 }

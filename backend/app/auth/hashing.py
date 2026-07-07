@@ -32,10 +32,10 @@ def hash_password(plain_password: str, *, rounds: int = _DEFAULT_ROUNDS) -> str:
         The bcrypt-hashed password as a string.
 
     Raises:
-        ValueError: If the plain_password is empty.
+        ValueError: If the plain_password is fewer than 8 characters.
     """
-    if not plain_password:
-        raise ValueError("Password must not be empty.")
+    if len(plain_password) < 8:
+        raise ValueError("Password must be at least 8 characters long.")
 
     password_bytes: bytes = plain_password.encode("utf-8")
     salt: bytes = bcrypt.gensalt(rounds=rounds)

@@ -113,18 +113,23 @@ export const auth = {
       .post<TokenResponse>("/auth/login", { email, password })
       .then(unwrap),
 
-  register: (email: string, password: string, role?: string) =>
+  register: (email: string, password: string) =>
     apiClient
-      .post<TokenResponse>("/auth/register", { email, password, role })
+      .post<TokenResponse>("/auth/register", { email, password })
       .then(unwrap),
 
   me: () =>
     apiClient.get<UserResponse>("/auth/me").then(unwrap),
 
-  refresh: (refreshToken: string) =>
+  /** Exchange the HttpOnly refresh cookie for a new access token. */
+  refresh: () =>
     apiClient
-      .post<TokenResponse>("/auth/refresh", { refresh_token: refreshToken })
+      .post<TokenResponse>("/auth/refresh")
       .then(unwrap),
+
+  /** Clear the HttpOnly refresh cookie on the server side. */
+  logout: () =>
+    apiClient.post<{ message: string }>("/auth/logout").then(unwrap),
 };
 
 // ── Categories ───────────────────────────────────────────────────────────────

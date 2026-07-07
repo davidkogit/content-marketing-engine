@@ -2,10 +2,10 @@
  * Axios API client with JWT interceptor and automatic token refresh.
  *
  * Features:
- * - Attaches the Authorization header from localStorage on every request.
- * - On 401 responses, attempts a silent refresh using the stored refresh token.
+ * - Attaches the Authorization header from in-memory storage on every request.
+ * - On 401 responses, attempts a silent refresh using the HttpOnly refresh cookie.
  * - Only one refresh is in-flight at a time (deduplication via promise latch).
- * - If the refresh fails, clears tokens and redirects to /login.
+ * - If the refresh fails, clears the in-memory token and redirects to /login.
  */
 
 import axios, {
@@ -15,8 +15,7 @@ import axios, {
 } from "axios";
 import {
   getAccessToken,
-  getRefreshToken,
-  setTokens,
+  setAccessToken,
   clearTokens,
 } from "./token-storage";
 
@@ -28,6 +27,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
 const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
+  withCredentials: true, // Send HttpOnly cookies on every request
 });
 
 // ── Refresh Token Deduplication ──────────────────────────────────────────────
@@ -36,7 +36,11 @@ const apiClient: AxiosInstance = axios.create({
 let refreshPromise: Promise<string | null> | null = null;
 
 /**
- * Attempt to exchange the stored refresh token for a new token pair.
+ * Attempt to exchange the HttpOnly refresh cookie for a new access token.
+ *
+ * The refresh token is sent automatically via the HttpOnly cookie
+ * (withCredentials: true).  The backend reads the cookie, validates it,
+ * and returns a fresh access token in the response body.
  *
  * Returns the new access token on success, or null on failure.
  * Deduplicates concurrent refresh attempts — only one HTTP call is made.
@@ -47,24 +51,18 @@ function refreshAccessToken(): Promise<string | null> {
   }
 
   refreshPromise = (async (): Promise<string | null> => {
-    const currentRefreshToken = getRefreshToken();
-    if (!currentRefreshToken) {
-      return null;
-    }
-
     try {
       // Use a raw axios call (not the interceptor-aware instance) to
       // avoid infinite retry loops on the /auth/refresh endpoint itself.
-      const response = await axios.post<{
-        access_token: string;
-        refresh_token: string;
-        token_type: string;
-      }>(`${BASE_URL}/auth/refresh`, {
-        refresh_token: currentRefreshToken,
-      });
+      // The refresh token is sent via the HttpOnly cookie automatically.
+      const response = await axios.post<{ access_token: string }>(
+        `${BASE_URL}/auth/refresh`,
+        {},
+        { withCredentials: true },
+      );
 
-      const { access_token, refresh_token } = response.data;
-      setTokens(access_token, refresh_token);
+      const { access_token } = response.data;
+      setAccessToken(access_token);
       return access_token;
     } catch {
       clearTokens();
