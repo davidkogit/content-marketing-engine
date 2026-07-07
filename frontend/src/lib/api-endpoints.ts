@@ -125,6 +125,15 @@ export const auth = {
   /** Clear the HttpOnly refresh cookie on the server side. */
   logout: () =>
     apiClient.post<{ message: string }>("/auth/logout").then(unwrap),
+
+  /** Change the current user's password. */
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiClient
+      .put<{ message: string }>("/auth/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword,
+      })
+      .then(unwrap),
 };
 
 // ── Categories ───────────────────────────────────────────────────────────────
@@ -194,6 +203,16 @@ export const products = {
   delete: (id: number, permanent = false) =>
     apiClient
       .delete<void>(`/products/${id}`, { params: { permanent } })
+      .then(unwrap),
+
+  /** Use LLM to suggest product fields from a document URL. */
+  suggest: (docUrl: string) =>
+    apiClient
+      .post<{ name: string; sku: string; description: string; specs: Record<string, string> }>(
+        "/products/suggest",
+        null,
+        { params: { doc_url: docUrl } },
+      )
       .then(unwrap),
 };
 

@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, type FormEvent } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Category, Segment, ProductCreate } from "@/types";
+import { products } from "@/lib/api-endpoints";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -100,6 +101,27 @@ export function ProductForm({
   const [segmentId, setSegmentId] = useState<number | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
 
+  // ── LLM Suggest state ───────────────────────────────────────────────────
+  const [suggestUrl, setSuggestUrl] = useState("");
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+
+  const handleSuggest = async () => {
+    if (!suggestUrl.trim()) return;
+    setIsSuggesting(true);
+    setSuggestError(null);
+    try {
+      const result = await products.suggest(suggestUrl.trim());
+      if (result.name) setName(result.name);
+      if (result.sku) setSku(result.sku);
+      if (result.description) setDescription(result.description);
+    } catch (err: any) {
+      setSuggestError(err?.response?.data?.detail ?? "Failed to extract product data.");
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   // ── Populate fields when `product` changes ──────────────────────────────
   useEffect(() => {
     if (open) {
@@ -158,6 +180,40 @@ export function ProductForm({
               : "Fill in the details to create a new product."}
           </DialogDescription>
         </DialogHeader>
+
+        {/* ── LLM Suggest (create mode only) ─────────────────────────────── */}
+        {!isEdit && (
+          <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg border">
+            <p className="text-xs font-medium text-muted-foreground">
+              Paste a document URL and let AI fill in the fields
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="https://example.com/datasheet.pdf"
+                value={suggestUrl}
+                onChange={(e) => setSuggestUrl(e.target.value)}
+                disabled={isSuggesting}
+                className="text-sm"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleSuggest}
+                disabled={isSuggesting || !suggestUrl.trim()}
+              >
+                {isSuggesting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {suggestError && (
+              <p className="text-xs text-destructive">{suggestError}</p>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* ── SKU ────────────────────────────────────────────────────── */}

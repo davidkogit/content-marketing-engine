@@ -57,7 +57,6 @@ const NAV_ITEMS: NavItem[] = [
     label: "Settings",
     to: "/settings",
     icon: Settings,
-    minRole: UserRoleEnum.SUPER_ADMIN,
     match: "prefix",
   },
 ]
