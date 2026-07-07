@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, type FormEvent } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Plus, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -102,16 +102,29 @@ export function ProductForm({
   const [errors, setErrors] = useState<FieldErrors>({});
 
   // ── LLM Suggest state ───────────────────────────────────────────────────
-  const [suggestUrl, setSuggestUrl] = useState("");
+  const [suggestUrls, setSuggestUrls] = useState<string[]>([""]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
 
+  const addUrlField = () => setSuggestUrls([...suggestUrls, ""]);
+  const removeUrlField = (i: number) => {
+    if (suggestUrls.length <= 1) return;
+    setSuggestUrls(suggestUrls.filter((_, idx) => idx !== i));
+  };
+  const updateUrl = (i: number, val: string) => {
+    const updated = [...suggestUrls];
+    updated[i] = val;
+    setSuggestUrls(updated);
+  };
+
   const handleSuggest = async () => {
-    if (!suggestUrl.trim()) return;
+    const urls = suggestUrls.filter((u) => u.trim());
+    if (!urls.length) return;
     setIsSuggesting(true);
     setSuggestError(null);
     try {
-      const result = await products.suggest(suggestUrl.trim());
+      // Use the first URL for suggestion (or combine if multiple)
+      const result = await products.suggest(urls[0]);
       if (result.name) setName(result.name);
       if (result.sku) setSku(result.sku);
       if (result.description) setDescription(result.description);
@@ -185,28 +198,55 @@ export function ProductForm({
         {!isEdit && (
           <div className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg border">
             <p className="text-xs font-medium text-muted-foreground">
-              Paste a document URL and let AI fill in the fields
+              Paste document URLs and let AI fill in the fields
             </p>
+            {suggestUrls.map((url, i) => (
+              <div key={i} className="flex gap-2">
+                <Input
+                  placeholder="https://example.com/datasheet.pdf"
+                  value={url}
+                  onChange={(e) => updateUrl(i, e.target.value)}
+                  disabled={isSuggesting}
+                  className="text-sm"
+                />
+                {suggestUrls.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeUrlField(i)}
+                    disabled={isSuggesting}
+                    className="shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
             <div className="flex gap-2">
-              <Input
-                placeholder="https://example.com/datasheet.pdf"
-                value={suggestUrl}
-                onChange={(e) => setSuggestUrl(e.target.value)}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={addUrlField}
                 disabled={isSuggesting}
-                className="text-sm"
-              />
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add document
+              </Button>
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
                 onClick={handleSuggest}
-                disabled={isSuggesting || !suggestUrl.trim()}
+                disabled={isSuggesting || !suggestUrls.some((u) => u.trim())}
               >
                 {isSuggesting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
                 ) : (
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4 mr-1" />
                 )}
+                Suggest
               </Button>
             </div>
             {suggestError && (

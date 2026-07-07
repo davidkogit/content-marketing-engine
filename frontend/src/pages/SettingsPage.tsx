@@ -78,8 +78,15 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* ── Password Change — available to all users ──────────────────────── */}
-      <PasswordSection />
+      {/* ── Password Change — collapsible, available to all users ──────────── */}
+      <details className="group">
+        <summary className="cursor-pointer text-lg font-semibold text-muted-foreground hover:text-foreground transition-colors">
+          My Account
+        </summary>
+        <div className="mt-4">
+          <PasswordSection />
+        </div>
+      </details>
 
       {/* ── Super Admin Tabs ──────────────────────────────────────────────── */}
       <RoleGuard
