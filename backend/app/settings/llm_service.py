@@ -187,6 +187,7 @@ async def test_llm_connection(
             provider_name=provider_name,
             api_key=decrypted_key,
             model=config.model_name,
+            api_base_url=config.api_base_url,
         )
     except ValueError as exc:
         return {
