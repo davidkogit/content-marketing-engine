@@ -1,0 +1,64 @@
+# ==========================================================================
+# Content Marketing Engine — Caddyfile for IP-only deployments (no domain)
+#
+# Serves on :80 (HTTP). No TLS — use for internal tools or when still
+# waiting on a domain.  Switch back to Caddyfile once you have a domain.
+#
+# Usage:
+#   cp deploy/Caddyfile.ip deploy/Caddyfile
+#   caddy reload --config /etc/caddy/Caddyfile
+# ==========================================================================
+
+:80 {
+
+    encode zstd gzip
+
+    log {
+        output stdout
+        format json
+    }
+
+    header {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin"
+        -Server
+    }
+
+    # Health check — no rate limit
+    handle /health {
+        reverse_proxy localhost:8000
+    }
+
+    # API — no auth needed here (handled by backend)
+    handle /api/* {
+        reverse_proxy localhost:8000 {
+            header_up X-Forwarded-Proto http
+            flush_interval -1
+        }
+    }
+
+    # Auth
+    handle /auth/* {
+        reverse_proxy localhost:8000 {
+            header_up X-Forwarded-Proto http
+        }
+    }
+
+    # Docs
+    handle /docs* {
+        reverse_proxy localhost:8000
+    }
+
+    handle /openapi.json {
+        reverse_proxy localhost:8000
+    }
+
+    # Static frontend — SPA fallback
+    handle {
+        root * /opt/content-marketing-engine/frontend/dist
+        encode zstd gzip
+        try_files {path} /index.html
+        file_server
+    }
+}

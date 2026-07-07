@@ -22,6 +22,11 @@ APP_GROUP="content-engine"
 PYTHON_BIN="${PYTHON_MINOR:-python3.11}"
 NODE_MAJOR="${NODE_MAJOR:-18}"
 CADDYFILE_SRC="$SCRIPT_DIR/Caddyfile"
+# Use IP-friendly Caddyfile when no domain or IP-only mode is set
+if [ "${USE_IP_ONLY:-false}" = "true" ] || [[ "${DOMAIN:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    log_info "Detected IP-only deployment — using HTTP (no TLS) Caddyfile."
+    CADDYFILE_SRC="$SCRIPT_DIR/Caddyfile.ip"
+fi
 SERVICE_SRC="$SCRIPT_DIR/content-engine.service"
 SERVICE_DST="/etc/systemd/system/content-engine.service"
 

@@ -42,6 +42,10 @@ class Settings(BaseSettings):
         default="http://localhost:5173",
         description="Comma-separated list of allowed CORS origins.",
     )
+    SECURE_COOKIES: bool = Field(
+        default=True,
+        description="Set cookies with Secure flag. Disable when running on HTTP (no TLS).",
+    )
 
     # ── Database ───────────────────────────────────────────────────────────
     DATABASE_URL: str = Field(

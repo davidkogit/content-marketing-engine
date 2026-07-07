@@ -31,6 +31,7 @@ from app.auth.schemas import (
 from app.auth.user_service import UserService
 from app.database import get_db
 from app.models.user import User
+from app.config import settings
 from app.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
@@ -67,12 +68,16 @@ async def _issue_token_pair(user: User) -> TokenResponse:
 
 
 def _set_refresh_cookie(response: Response, token: str) -> None:
-    """Attach the refresh token as an HttpOnly, Secure, SameSite=Strict cookie."""
+    """Attach the refresh token as an HttpOnly, SameSite=Strict cookie.
+
+    The Secure flag is controlled by the SECURE_COOKIES setting —
+    disabled when running on plain HTTP (e.g. IP-only deployments).
+    """
     response.set_cookie(
         key=_REFRESH_COOKIE_KEY,
         value=token,
         httponly=True,
-        secure=True,
+        secure=settings.SECURE_COOKIES,
         samesite="strict",
         path=_REFRESH_COOKIE_PATH,
         max_age=_REFRESH_COOKIE_MAX_AGE,
