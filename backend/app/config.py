@@ -60,11 +60,11 @@ class Settings(BaseSettings):
     )
     LLM_API_KEY: SecretStr | None = Field(
         default=None,
-        description="API key for the configured LLM provider.",
+        description="Fallback API key (used only if no DB config exists). Set via Settings page in UI.",
     )
     LLM_MODEL: str = Field(
         default="gpt-4o",
-        description="Model identifier for LLM calls (e.g. gpt-4o, claude-3-opus).",
+        description="Fallback model identifier (used only if no DB config exists).",
     )
 
     @field_validator("LLM_PROVIDER")
@@ -80,11 +80,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_llm_config(self) -> "Settings":
-        """Warn if LLM provider is configured without an API key."""
-        if self.LLM_PROVIDER and not self.LLM_API_KEY:
-            raise ValueError(
-                "LLM_API_KEY is required when LLM_PROVIDER is configured"
-            )
+        """Validate LLM provider name. API key is optional here — it can be set via the Admin UI."""
         return self
 
     # ── Derived Properties ─────────────────────────────────────────────────
