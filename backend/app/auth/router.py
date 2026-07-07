@@ -11,8 +11,6 @@ Self-registration is disabled.  All accounts must be created via the
 Super Admin invite flow at ``POST /settings/users/invite``.
 """
 
-from __future__ import annotations
-
 import logging
 from typing import Annotated
 
