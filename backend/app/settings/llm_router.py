@@ -131,6 +131,7 @@ async def put_llm_config(
             api_key=body.api_key,
             api_base_url=body.api_base_url,
         )
+        await db.commit()
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
