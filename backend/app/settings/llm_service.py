@@ -111,6 +111,7 @@ async def update_llm_config(
     provider: str,
     model: str,
     api_key: str,
+    api_base_url: str | None = None,
 ) -> LLMConfig:
     """Persist a new active LLM configuration, encrypting the API key first.
 
@@ -134,6 +135,7 @@ async def update_llm_config(
         provider=provider,
         api_key=api_key,
         model=model,
+        api_base_url=api_base_url,
         make_active=True,
     )
     # Immediately invalidate cache so callers get the fresh config.

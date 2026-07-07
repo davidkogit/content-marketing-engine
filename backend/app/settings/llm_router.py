@@ -83,6 +83,7 @@ async def get_llm_config(
     return LLMConfigResponse(
         provider=config.provider.value,
         model=config.model_name,
+        api_base_url=config.api_base_url,
         masked_api_key=masked,
         is_active=config.is_active,
         created_at=config.created_at,
@@ -121,6 +122,7 @@ async def put_llm_config(
             provider=body.provider,
             model=body.model,
             api_key=body.api_key,
+            api_base_url=body.api_base_url,
         )
     except ValueError as exc:
         raise HTTPException(

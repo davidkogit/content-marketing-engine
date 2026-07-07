@@ -45,11 +45,13 @@ export default function SettingsPage() {
     provider: string;
     model: string;
     apiKey: string;
+    apiBaseUrl?: string | null;
   }) => {
     return saveLlmConfig({
       provider: body.provider,
       model: body.model,
       api_key: body.apiKey,
+      api_base_url: body.apiBaseUrl ?? null,
     });
   };
 

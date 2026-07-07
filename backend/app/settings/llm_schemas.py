@@ -43,6 +43,10 @@ class LLMConfigUpdateRequest(BaseModel):
         min_length=1,
         description="Plain-text API key — encrypted at rest, never returned in responses.",
     )
+    api_base_url: str | None = Field(
+        default=None,
+        description="Optional custom API base URL (e.g. https://openrouter.ai/api/v1). Uses provider default if empty.",
+    )
 
     @field_validator("provider")
     @classmethod
@@ -68,6 +72,7 @@ class LLMConfigResponse(BaseModel):
 
     provider: str
     model: str
+    api_base_url: str | None = None
     masked_api_key: str = Field(
         ...,
         description="Partially masked API key — e.g. 'sk-...aBcD'.",

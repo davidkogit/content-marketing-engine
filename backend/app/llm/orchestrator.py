@@ -393,6 +393,7 @@ class GenerationOrchestrator:
             provider_name=config.provider.value,
             api_key=api_key,
             model=config.model_name,
+            api_base_url=config.api_base_url,
         )
 
     async def _call_llm_with_timeout(

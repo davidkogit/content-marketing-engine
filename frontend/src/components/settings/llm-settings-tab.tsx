@@ -49,7 +49,7 @@ interface LlmSettingsTabProps {
   /** The result of the most recent test-connection call */
   testResult: LLMConfigTestResponse | null;
   /** Called when the user clicks Save */
-  onSave: (body: { provider: string; model: string; apiKey: string }) => Promise<boolean>;
+  onSave: (body: { provider: string; model: string; apiKey: string; apiBaseUrl?: string | null }) => Promise<boolean>;
   /** Called when the user clicks Test Connection */
   onTest: () => Promise<LLMConfigTestResponse | null>;
 }
@@ -88,6 +88,7 @@ export function LlmSettingsTab({
   const [provider, setProvider] = React.useState<string>("openai");
   const [model, setModel] = React.useState<string>("");
   const [apiKey, setApiKey] = React.useState<string>("");
+  const [apiBaseUrl, setApiBaseUrl] = React.useState<string>("");
   const [formErrors, setFormErrors] = React.useState<Record<string, string>>({});
 
   // Sync local state with server config when it loads
@@ -96,6 +97,7 @@ export function LlmSettingsTab({
       setProvider(config.provider);
       setModel(config.model);
       setApiKey(""); // never pre-fill the API key
+      setApiBaseUrl(config.api_base_url ?? "");
     }
   }, [config]);
 
@@ -138,7 +140,7 @@ export function LlmSettingsTab({
 
   const handleSave = async () => {
     if (!validate()) return;
-    await onSave({ provider, model, apiKey });
+    await onSave({ provider, model, apiKey, apiBaseUrl: apiBaseUrl || null });
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -203,6 +205,23 @@ export function LlmSettingsTab({
               {formErrors.model}
             </p>
           )}
+        </div>
+
+        {/* API Base URL */}
+        <div className="space-y-2">
+          <label htmlFor="llm-base-url" className="text-sm font-medium">
+            API Base URL <span className="text-muted-foreground font-normal">(optional)</span>
+          </label>
+          <Input
+            id="llm-base-url"
+            value={apiBaseUrl}
+            onChange={(e) => setApiBaseUrl(e.target.value)}
+            placeholder="https://api.openai.com/v1"
+            disabled={isSaving}
+          />
+          <p className="text-xs text-muted-foreground">
+            Custom endpoint for OpenRouter or self-hosted LLMs. Leave empty for defaults.
+          </p>
         </div>
 
         {/* API Key */}

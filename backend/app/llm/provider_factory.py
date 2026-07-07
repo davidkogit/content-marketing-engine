@@ -22,13 +22,19 @@ _PROVIDER_MAP: dict[str, Type[LLMProvider]] = {
 # ── Public API ──────────────────────────────────────────────────────────────
 
 
-def get_provider(provider_name: str, api_key: str, model: str) -> LLMProvider:
+def get_provider(
+    provider_name: str,
+    api_key: str,
+    model: str,
+    api_base_url: str | None = None,
+) -> LLMProvider:
     """Return a configured LLM provider instance.
 
     Args:
         provider_name: Lowercase provider identifier (``openai`` | ``anthropic``).
         api_key: API key for the chosen provider.
         model: Model identifier (e.g. ``gpt-4o``, ``claude-3-opus-20240229``).
+        api_base_url: Optional custom API base URL (e.g. for OpenRouter).
 
     Returns:
         A concrete ``LLMProvider`` instance ready to call ``.generate()``.
@@ -46,7 +52,11 @@ def get_provider(provider_name: str, api_key: str, model: str) -> LLMProvider:
             f"Choose from: {supported}"
         )
 
-    return provider_cls(api_key=api_key, model=model)
+    kwargs = {"api_key": api_key, "model": model}
+    if api_base_url:
+        kwargs["base_url"] = api_base_url
+
+    return provider_cls(**kwargs)
 
 
 def list_providers() -> list[str]:

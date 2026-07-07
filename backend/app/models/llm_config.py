@@ -40,6 +40,7 @@ class LLMConfig(Base):
     )
     api_key_encrypted: Mapped[str] = mapped_column(Text, nullable=False)
     model_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    api_base_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )

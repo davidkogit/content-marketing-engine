@@ -190,6 +190,7 @@ export type LLMProvider = (typeof LLMProvider)[keyof typeof LLMProvider];
 export interface LLMConfigResponse {
   provider: string;
   model: string;
+  api_base_url: string | null;
   masked_api_key: string;
   is_active: boolean;
   created_at: string;
@@ -199,6 +200,7 @@ export interface LLMConfigUpdateRequest {
   provider: string;
   model: string;
   api_key: string;
+  api_base_url?: string | null;
 }
 
 export interface LLMConfigTestResponse {

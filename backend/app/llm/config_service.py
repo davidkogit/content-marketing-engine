@@ -153,6 +153,7 @@ class LLMConfigService:
         provider: str,
         api_key: str,
         model: str,
+        api_base_url: str | None = None,
         make_active: bool = True,
     ) -> LLMConfig:
         """Persist a new LLM configuration, encrypting the API key first.
@@ -182,6 +183,7 @@ class LLMConfigService:
             provider=llm_provider,
             api_key_encrypted=encrypted,
             model_name=model,
+            api_base_url=api_base_url,
             is_active=make_active,
         )
         db.add(config)
