@@ -12,7 +12,6 @@ eager-loaded relationships) and an ExportMappingConfig, and returns
 either a CSV string or a list of dicts suitable for JSON preview.
 """
 
-from __future__ import annotations
 
 import csv
 import io

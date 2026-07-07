@@ -5,7 +5,6 @@ Defines schemas for Kanban board view, stage transitions, approval
 shortcuts, and workflow history timeline.
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 

@@ -7,7 +7,6 @@ enforcement, workflow-stage initialisation, and automatic version
 snapshot creation when product content changes.
 """
 
-from __future__ import annotations
 
 import json
 import logging

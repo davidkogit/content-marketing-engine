@@ -5,7 +5,6 @@ Maps provider identifiers (``openai``, ``anthropic``) to their respective
 provider classes and injects the API key and model configuration.
 """
 
-from __future__ import annotations
 
 from typing import Type
 

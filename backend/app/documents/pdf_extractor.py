@@ -6,7 +6,6 @@ Provides ``PDFExtractor``, a concrete implementation of the
 while preserving paragraph structure.
 """
 
-from __future__ import annotations
 
 import logging
 import tempfile

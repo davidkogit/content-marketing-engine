@@ -9,7 +9,6 @@ Mounts under ``/segments`` and exposes:
 - ``DELETE /segments/{id}`` — delete a segment (admin+ only, blocked if products exist)
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated

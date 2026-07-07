@@ -5,7 +5,6 @@ Provides a UserService class whose methods accept a database session via
 dependency injection, keeping callers in control of transaction boundaries.
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Any

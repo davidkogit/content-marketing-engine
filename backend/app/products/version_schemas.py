@@ -5,7 +5,6 @@ Defines ``VersionResponse`` (with full snapshot payload) and
 ``VersionListResponse`` for paginated listing.
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 

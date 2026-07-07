@@ -5,7 +5,6 @@ Defines the contract that every provider must implement and the standard
 response envelope returned to callers.
 """
 
-from __future__ import annotations
 
 import time
 from abc import ABC, abstractmethod

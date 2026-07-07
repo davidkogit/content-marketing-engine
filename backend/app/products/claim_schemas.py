@@ -5,7 +5,6 @@ Defines ClaimCreate, ClaimUpdate, and ClaimResponse (with optional
 nested document reference).
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 

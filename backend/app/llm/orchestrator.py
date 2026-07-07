@@ -8,7 +8,6 @@ Also provides an async task management layer for background generation with
 timeout handling and status polling.
 """
 
-from __future__ import annotations
 
 import asyncio
 import logging

@@ -7,7 +7,6 @@ enforces minimum role level on endpoints. Both raise appropriate HTTP
 exceptions (401 Unauthorized, 403 Forbidden) when checks fail.
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated

@@ -9,7 +9,6 @@ Mounts under ``/settings/llm`` and exposes:
 All endpoints require ``SUPER_ADMIN`` role.
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated

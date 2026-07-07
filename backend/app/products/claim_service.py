@@ -6,7 +6,6 @@ status filter), updating, and deleting claims.  Cross-entity validation
 ensures source documents belong to the same product when referenced.
 """
 
-from __future__ import annotations
 
 import logging
 

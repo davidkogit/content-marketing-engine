@@ -10,7 +10,6 @@ exposes:
 - ``DELETE /api/products/{id}``   — soft- or hard-delete (super_admin only)
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated

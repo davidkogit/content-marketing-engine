@@ -5,7 +5,6 @@ Defines generation types, request/response models for the generate endpoint,
 claim/source/violation anchors, and the async task-status polling response.
 """
 
-from __future__ import annotations
 
 from enum import Enum
 

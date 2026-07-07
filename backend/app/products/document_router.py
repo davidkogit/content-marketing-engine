@@ -7,7 +7,6 @@ Mounts under ``/api/v1`` (prefixed by ``main.py``) and exposes:
 - ``DELETE /api/documents/{id}``           — remove document link (admin+ only)
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated

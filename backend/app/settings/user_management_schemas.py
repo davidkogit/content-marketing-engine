@@ -5,7 +5,6 @@ Defines schemas for listing users, inviting new users, changing roles,
 and deactivating accounts — all restricted to the SUPER_ADMIN role.
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 

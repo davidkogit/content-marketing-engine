@@ -5,7 +5,6 @@ Uses the ``openai`` Python SDK with an async client to generate chat
 completions, mapping the SDK response into the standard ``LLMResponse``.
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Any

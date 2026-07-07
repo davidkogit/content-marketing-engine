@@ -5,7 +5,6 @@ Provides read/write access to the ``llm_config`` database table with
 automatic encryption of API keys before storage and decryption on read.
 """
 
-from __future__ import annotations
 
 import base64
 import hashlib

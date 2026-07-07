@@ -10,7 +10,6 @@ Reads are available to any authenticated user (rules are consumed by the
 LLM orchestrator); writes require the SUPER_ADMIN role.
 """
 
-from __future__ import annotations
 
 import logging
 from pathlib import Path

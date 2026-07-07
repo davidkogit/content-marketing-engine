@@ -8,7 +8,6 @@ Mounts under ``/api/v1`` (prefixed by ``main.py``) and exposes:
 - ``DELETE /api/claims/{id}``           — remove claim (admin+)
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated

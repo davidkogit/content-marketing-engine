@@ -6,7 +6,6 @@ Brand rules are markdown files (tone, compliance, style) stored in
 endpoints.
 """
 
-from __future__ import annotations
 
 from pydantic import BaseModel, Field
 

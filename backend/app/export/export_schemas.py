@@ -6,7 +6,6 @@ response, and the internal structures that drive field selection and
 claim formatting during CSV generation.
 """
 
-from __future__ import annotations
 
 import enum
 from datetime import datetime

@@ -9,7 +9,6 @@ Mounts under ``/api/v1/generate`` and exposes:
 - ``GET  /api/generate/status/{task_id}`` — polls the status of an async task.
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated

@@ -5,7 +5,6 @@ Defines ``CategoryCreate``, ``CategoryUpdate``, and ``CategoryResponse``
 models with validation rules matching the SQLAlchemy Category model.
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 

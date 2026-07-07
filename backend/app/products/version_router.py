@@ -8,7 +8,6 @@ exposes:
 - ``POST   /api/products/{id}/versions/{n}/restore``  — restore to version (admin+)
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated

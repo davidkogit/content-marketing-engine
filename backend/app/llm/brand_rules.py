@@ -7,7 +7,6 @@ Falls back to sensible defaults when any rule file is missing so the
 pipeline never breaks on missing configuration.
 """
 
-from __future__ import annotations
 
 import logging
 from dataclasses import dataclass

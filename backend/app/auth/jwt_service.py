@@ -7,7 +7,6 @@ SECRET_KEY from application config. Expiry times are configurable
 with sensible defaults (30 min access, 7 day refresh).
 """
 
-from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta, timezone

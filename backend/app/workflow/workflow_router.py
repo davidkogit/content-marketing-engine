@@ -10,7 +10,6 @@ Mounts under ``/workflow`` (prefixed by ``/api/v1`` in main.py) and exposes:
 - GET    /api/v1/workflow/products/{id}/history            — transition timeline
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated

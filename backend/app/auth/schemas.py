@@ -6,7 +6,6 @@ registration, login, and token refresh, and response models for tokens
 and user profiles.
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum

@@ -5,7 +5,6 @@ Defines ``SegmentCreate``, ``SegmentUpdate``, and ``SegmentResponse``
 models with validation rules for market-segment data.
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 

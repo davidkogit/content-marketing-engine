@@ -9,7 +9,6 @@ the Retry-After header. HTML is parsed to plain text using Python's built-in
 html.parser, stripping <script>, <style>, and <noscript> elements.
 """
 
-from __future__ import annotations
 
 import asyncio
 import logging

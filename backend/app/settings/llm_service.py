@@ -7,7 +7,6 @@ Wraps the lower-level ``LLMConfigService`` (encryption / DB persistence) with:
 - Connection testing via the provider factory.
 """
 
-from __future__ import annotations
 
 import logging
 import time

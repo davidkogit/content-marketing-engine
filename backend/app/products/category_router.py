@@ -9,7 +9,6 @@ Product counts are returned inline on single-category reads so the
 frontend can display them without additional requests.
 """
 
-from __future__ import annotations
 
 import logging
 from typing import Annotated, Sequence

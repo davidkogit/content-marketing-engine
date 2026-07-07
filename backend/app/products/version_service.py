@@ -7,7 +7,6 @@ operation creates a new version recording the rollback so the audit
 trail is never truncated.
 """
 
-from __future__ import annotations
 
 import json
 import logging

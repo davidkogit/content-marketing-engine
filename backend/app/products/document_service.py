@@ -6,7 +6,6 @@ listing, and deleting product documents.  All methods accept ``db`` as the first
 positional argument for callers to control session boundaries.
 """
 
-from __future__ import annotations
 
 import logging
 from urllib.parse import urlparse

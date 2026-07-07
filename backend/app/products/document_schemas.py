@@ -5,7 +5,6 @@ Defines DocumentCreate (for linking a URL to a product) and
 DocumentResponse (returned to API consumers).
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 

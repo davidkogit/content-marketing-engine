@@ -5,7 +5,6 @@ Defines ProductCreate, ProductUpdate, ProductResponse (with nested
 relationships), and ProductListResponse (with pagination metadata).
 """
 
-from __future__ import annotations
 
 from datetime import datetime
 

@@ -7,7 +7,6 @@ persona instructions.  User prompts provide the product details, source
 documents, and the marketer's specific request.
 """
 
-from __future__ import annotations
 
 from app.llm.context_collector import GenerationContext
 

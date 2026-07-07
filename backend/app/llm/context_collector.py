@@ -7,7 +7,6 @@ All database access is async and accepts a session via dependency injection.
 Missing / incomplete data is handled gracefully so the pipeline never throws.
 """
 
-from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field

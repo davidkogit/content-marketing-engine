@@ -9,7 +9,6 @@ Mounts under ``/export`` (prefixed by ``/api/v1`` in main.py) and exposes:
 - ``GET    /api/export/history``              — paginated export log
 """
 
-from __future__ import annotations
 
 import json
 import logging

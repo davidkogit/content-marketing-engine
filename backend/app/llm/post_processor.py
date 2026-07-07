@@ -6,7 +6,6 @@ informational flags.
 Works with both structured (JSON-like) and free-form LLM output.
 """
 
-from __future__ import annotations
 
 import json
 import logging

@@ -6,7 +6,6 @@ exposes endpoints restricted to ``super_admin`` role only.  Self-demotion
 and deactivation of the last super_admin are prevented.
 """
 
-from __future__ import annotations
 
 import logging
 import secrets
