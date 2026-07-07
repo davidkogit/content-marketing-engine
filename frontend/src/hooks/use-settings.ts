@@ -65,7 +65,7 @@ export interface SettingsState {
 type SettingsAction =
   // -- LLM --
   | { type: "LLM_LOADING" }
-  | { type: "LLM_LOADED"; config: LLMConfigResponse }
+  | { type: "LLM_LOADED"; config: LLMConfigResponse | null }
   | { type: "LLM_ERROR"; error: string }
   | { type: "LLM_SAVING" }
   | { type: "LLM_SAVED"; config: LLMConfigResponse }
