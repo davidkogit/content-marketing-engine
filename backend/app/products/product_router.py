@@ -121,8 +121,89 @@ async def create_product(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
+        )
+
+
+# ── POST /products/suggest ─────────────────────────────────────────────────
+
+
+@router.post(
+    "/suggest",
+    summary="Suggest product fields from a document URL",
+)
+async def suggest_product(
+    doc_url: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> dict:
+    """Extract product name, SKU, description, and specs from a document URL.
+
+    Fetches the document, extracts text, and uses the configured LLM to
+    suggest product fields.  Returns suggested values the user can accept
+    or edit.
+
+    Requires: The LLM provider must be configured in Settings.
+    """
+    from app.documents.url_fetcher import URLFetcher, FetchedContent, FetchError
+    from app.llm.orchestrator import GenerationOrchestrator
+
+    # Fetch document text
+    fetcher = URLFetcher()
+    result = await fetcher.fetch(doc_url)
+    if isinstance(result, Exception):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Could not fetch document: {result}",
+        )
+
+    doc_text = result.raw_text[:8000]  # Limit context
+
+    # Get LLM provider
+    orchestrator = GenerationOrchestrator()
+    try:
+        provider = await orchestrator.resolve_provider(db)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        )
+
+    prompt = (
+        "Extract product information from this document. "
+        "Return ONLY valid JSON with these keys:\n"
+        '- "name": product name\n'
+        '- "sku": product code/SKU, or null if not found\n'
+        '- "description": 2-3 sentence summary\n'
+        '- "specs": object of key-value technical specifications\n\n'
+        f"Document:\n{doc_text}"
+    )
+
+    system_prompt = (
+        "Extract product data from documents. Return ONLY valid JSON, "
+        "no explanation."
+    )
+
+    try:
+        response = await provider.generate(prompt, system_prompt=system_prompt)
+        import json
+
+        # Try to extract JSON from response
+        content = response.content.strip()
+        if content.startswith("```"):
+            content = content.split("\n", 1)[1].rsplit("\n", 1)[0]
+        data = json.loads(content)
+        return {
+            "name": data.get("name", ""),
+            "sku": data.get("sku", ""),
+            "description": data.get("description", ""),
+            "specs": data.get("specs", {}),
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to extract product data: {str(exc)}",
         )
 
     logger.info(

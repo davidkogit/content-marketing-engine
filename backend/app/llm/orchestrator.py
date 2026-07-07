@@ -184,7 +184,7 @@ class GenerationOrchestrator:
         user_prompt = self._prompt_builder.build_user_prompt(context, instruction)
 
         # 3. Get LLM provider
-        provider = await self._resolve_provider(db)
+        provider = await self.resolve_provider(db)
 
         # 4. Call LLM with timeout
         llm_response = await self._call_llm_with_timeout(
@@ -363,7 +363,7 @@ class GenerationOrchestrator:
         )
 
     @staticmethod
-    async def _resolve_provider(db: AsyncSession):
+    async def resolve_provider(db: AsyncSession):
         """Resolve the active LLM provider from configuration.
 
         Args:

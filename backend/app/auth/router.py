@@ -21,6 +21,7 @@ from app.auth.dependencies import get_current_user
 from app.auth.hashing import verify_password
 from app.auth.jwt_service import JWTService, TokenExpiredError, TokenInvalidError
 from app.auth.schemas import (
+    ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
     TokenResponse,
@@ -282,3 +283,52 @@ async def logout(
     _clear_refresh_cookie(response)
     logger.info("User logged out — refresh cookie cleared")
     return {"message": "Logged out successfully."}
+
+
+# ── PUT /auth/change-password ──────────────────────────────────────────────
+
+
+@router.put(
+    "/change-password",
+    summary="Change password for current user",
+)
+async def change_password(
+    body: ChangePasswordRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, str]:
+    """Change the authenticated user's password.
+
+    Requires the current password for verification.  The new password
+    must be at least 8 characters.
+
+    Args:
+        current_password: User's existing password for verification.
+        new_password: The new password (min 8 chars).
+
+    Returns:
+        ``{"message": "Password changed successfully."}``
+
+    Raises:
+        HTTPException 401: If the current password is incorrect.
+        HTTPException 400: If the new password is too short.
+    """
+    if not verify_password(body.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect.",
+        )
+
+    if len(body.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be at least 8 characters.",
+        )
+
+    from app.auth.hashing import hash_password
+
+    current_user.hashed_password = hash_password(body.new_password)
+    await db.commit()
+
+    logger.info("User id=%d changed their password", current_user.id)
+    return {"message": "Password changed successfully."}
