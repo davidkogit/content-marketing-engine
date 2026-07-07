@@ -20,7 +20,7 @@ APP_DIR="${APP_DIR:-/opt/content-marketing-engine}"
 APP_USER="content-engine"
 APP_GROUP="content-engine"
 PYTHON_BIN="${PYTHON_MINOR:-python3.11}"
-NODE_MAJOR="${NODE_MAJOR:-18}"
+NODE_MAJOR="${NODE_MAJOR:-22}"
 CADDYFILE_SRC="$SCRIPT_DIR/Caddyfile"
 # Use IP-friendly Caddyfile when no domain or IP-only mode is set
 if [ "${USE_IP_ONLY:-false}" = "true" ] || [[ "${DOMAIN:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
