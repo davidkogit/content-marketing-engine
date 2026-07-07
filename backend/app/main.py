@@ -16,11 +16,14 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.auth.router import router as auth_router
 from app.products.segment_router import router as segments_router
+from app.products.category_router import router as category_router
 from app.products.product_router import router as product_router
 from app.products.document_router import router as document_router
 from app.products.claim_router import router as claim_router
 from app.products.version_router import router as version_router
 from app.llm.generation_router import router as generation_router
+from app.workflow.workflow_router import router as workflow_router
+from app.export.export_router import router as export_router
 from app.settings.user_management_router import router as user_management_router
 from app.settings.brand_rules_router import router as brand_rules_router
 from app.settings.llm_router import router as settings_llm_router
@@ -63,10 +66,13 @@ def create_app() -> FastAPI:
     # Mount API routers
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(segments_router, prefix="/api/v1")
+    app.include_router(category_router, prefix="/api/v1")
     app.include_router(product_router, prefix="/api/v1")
     app.include_router(document_router, prefix="/api/v1")
     app.include_router(claim_router, prefix="/api/v1")
     app.include_router(version_router, prefix="/api/v1")
+    app.include_router(workflow_router, prefix="/api/v1")
+    app.include_router(export_router, prefix="/api/v1")
     app.include_router(generation_router, prefix="/api/v1")
     app.include_router(user_management_router, prefix="/api/v1")
     app.include_router(brand_rules_router, prefix="/api/v1")
