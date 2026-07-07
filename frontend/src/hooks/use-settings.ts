@@ -306,8 +306,13 @@ export function useSettings() {
       try {
         const config = await settingsLlm.get();
         dispatch({ type: "LLM_LOADED", config });
-      } catch (err) {
-        dispatch({ type: "LLM_ERROR", error: getErrorMessage(err) });
+      } catch (err: any) {
+        // 404 means no config exists yet — show empty form, not an error
+        if (err?.response?.status === 404) {
+          dispatch({ type: "LLM_LOADED", config: null });
+        } else {
+          dispatch({ type: "LLM_ERROR", error: getErrorMessage(err) });
+        }
       }
     }
 
