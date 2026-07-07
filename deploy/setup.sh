@@ -418,7 +418,7 @@ SUPER_ADMIN_EMAIL=$super_admin_email
 SECRET_KEY=$secret_key
 
 # Database (SQLite — file path relative to backend/)
-DATABASE_URL=sqlite:///./data/products.db
+DATABASE_URL=sqlite+aiosqlite:///./data/products.db
 
 # CORS (comma-separated origins allowed)
 CORS_ORIGINS=https://$domain
