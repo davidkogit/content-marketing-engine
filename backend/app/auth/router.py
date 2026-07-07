@@ -1,12 +1,14 @@
 """
-Auth API router — registration, login, token refresh, logout, and profile endpoints.
+Auth API router — login, token refresh, logout, and profile endpoints.
 
 Mounts under ``/auth`` and exposes:
-- ``POST /auth/register`` — create account, get access token + HttpOnly refresh cookie
 - ``POST /auth/login`` — authenticate, get access token + HttpOnly refresh cookie
 - ``GET  /auth/me`` — current user profile
 - ``POST /auth/refresh`` — exchange refresh cookie for new access token + cookie
 - ``POST /auth/logout`` — clear the refresh cookie
+
+Self-registration is disabled.  All accounts must be created via the
+Super Admin invite flow at ``POST /settings/users/invite``.
 """
 
 from __future__ import annotations
@@ -23,13 +25,12 @@ from app.auth.jwt_service import JWTService, TokenExpiredError, TokenInvalidErro
 from app.auth.schemas import (
     LoginRequest,
     RefreshRequest,
-    RegisterRequest,
     TokenResponse,
     UserResponse,
 )
 from app.auth.user_service import UserService
 from app.database import get_db
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
@@ -81,53 +82,6 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
 def _clear_refresh_cookie(response: Response) -> None:
     """Remove the refresh token cookie."""
     response.delete_cookie(key=_REFRESH_COOKIE_KEY, path=_REFRESH_COOKIE_PATH)
-
-
-# ── POST /auth/register ─────────────────────────────────────────────────────
-
-
-@router.post(
-    "/register",
-    response_model=TokenResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Register a new user",
-)
-@limiter.limit("3/hour")
-async def register(
-    body: RegisterRequest,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    response: Response,
-) -> TokenResponse:
-    """Create a new user account and return an access token + HttpOnly refresh cookie.
-
-    Self-registration always creates a VIEWER-role account.  Higher roles
-    must be assigned via the invite flow by a super_admin.
-
-    Returns:
-        A ``TokenResponse`` with the access token.  The refresh token is
-        set as an HttpOnly cookie.
-
-    Raises:
-        HTTPException 409: If the email is already registered.
-    """
-    try:
-        user = await _user_service.create_user(
-            db,
-            email=body.email,
-            password=body.password,
-            role=UserRole.VIEWER,
-        )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        )
-
-    logger.info("Registered new user id=%d email=%r", user.id, user.email)
-
-    token_pair = await _issue_token_pair(user)
-    _set_refresh_cookie(response, token_pair.refresh_token)
-    return TokenResponse(access_token=token_pair.access_token)
 
 
 # ── POST /auth/login ────────────────────────────────────────────────────────

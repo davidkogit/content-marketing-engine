@@ -2,7 +2,7 @@
  * Application route configuration.
  *
  * Public routes (no auth required):
- *   /login, /register
+ *   /login
  *
  * Protected routes (auth required, wrapped in AppShell layout):
  *   /               — Dashboard (home)
@@ -15,6 +15,9 @@
  *
  * Layout hierarchy:
  *   <AuthProvider> → <Routes> → <ProtectedRoute> → <AppShell> → pages
+ *
+ * Self-registration is disabled.  All accounts are created via the
+ * Super Admin invite flow at /settings.
  *
  * Uses react-router-dom v6 with lazy-loaded page components for
  * code-splitting.
@@ -35,7 +38,6 @@ const CategoriesPage = lazy(() => import("@/pages/categories-page"));
 const SegmentsPage = lazy(() => import("@/pages/segments-page"));
 const DocumentsPage = lazy(() => import("@/pages/documents-page"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
-const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
 
 // ── Loading Fallback ─────────────────────────────────────────────────────────
 
@@ -55,7 +57,6 @@ export default function AppRoutes() {
       <Routes>
         {/* ── Public Routes (no layout) ──────────────────────────────── */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
 
         {/* ── Protected Routes → AppShell Layout → Pages ─────────────── */}
         <Route element={<ProtectedRoute />}>

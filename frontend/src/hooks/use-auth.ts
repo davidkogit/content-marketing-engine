@@ -10,7 +10,7 @@ import { AuthContext, type AuthContextValue } from "@/contexts/auth-context";
 
 /**
  * Returns the full auth context value: user, isAuthenticated,
- * isLoading, login(), register(), logout(), hasRole().
+ * isLoading, login(), logout(), hasRole().
  */
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);

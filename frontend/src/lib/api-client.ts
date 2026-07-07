@@ -105,8 +105,7 @@ apiClient.interceptors.response.use(
     // Don't attempt refresh if the failing request IS the refresh call itself.
     if (
       originalRequest.url?.includes("/auth/refresh") ||
-      originalRequest.url?.includes("/auth/login") ||
-      originalRequest.url?.includes("/auth/register")
+      originalRequest.url?.includes("/auth/login")
     ) {
       return Promise.reject(error);
     }

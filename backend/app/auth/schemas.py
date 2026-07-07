@@ -53,23 +53,6 @@ _ROLE_DTO_TO_ORM: dict[RoleDTO, UserRole] = {
 # ── Request Schemas ─────────────────────────────────────────────────────────
 
 
-class RegisterRequest(BaseModel):
-    """Request body for user registration.
-
-    The email must be unique across the system. Password must be at least
-    8 characters. The role is always VIEWER for self-registration; higher
-    roles must be assigned via the invite flow by a super_admin.
-    """
-
-    email: EmailStr
-    password: str = Field(
-        ...,
-        min_length=8,
-        max_length=128,
-        description="Plain-text password (8–128 characters).",
-    )
-
-
 class LoginRequest(BaseModel):
     """Request body for user login."""
 

@@ -10,7 +10,6 @@
  */
 
 import { useState, useCallback, type FormEvent, type ChangeEvent } from "react";
-import { Link } from "react-router-dom";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -264,16 +263,6 @@ export function LoginForm() {
             )}
             {isSubmitting ? "Signing in…" : "Sign in"}
           </Button>
-
-          <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link
-              to="/register"
-              className="font-medium text-primary underline underline-offset-4 hover:text-primary/90"
-            >
-              Create one
-            </Link>
-          </p>
         </CardFooter>
       </form>
     </Card>

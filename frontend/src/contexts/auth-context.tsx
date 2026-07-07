@@ -1,13 +1,16 @@
 /**
  * Auth context provider — manages authentication state for the entire app.
  *
- * Provides: user, isAuthenticated, isLoading, login(), register(),
+ * Provides: user, isAuthenticated, isLoading, login(),
  * logout(), hasRole().  Wraps the app root so any component can access
  * auth state via the useAuth() hook.
  *
+ * Self-registration is disabled.  All accounts are created through the
+ * Super Admin invite flow at /settings.
+ *
  * Token storage and API calls are delegated to the existing lib modules:
  *   - lib/token-storage  (getAccessToken, setAccessToken, clearTokens)
- *   - lib/api-endpoints   (auth.login, auth.register, auth.me, auth.logout)
+ *   - lib/api-endpoints   (auth.login, auth.me, auth.logout)
  *
  * The Axios interceptor in lib/api-client handles silent token refresh
  * on 401 responses — this context only needs to handle the happy path.
@@ -95,7 +98,6 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hasRole: (minRole: UserRole) => boolean;
 }
@@ -175,31 +177,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [navigate],
   );
 
-  // ── register() ───────────────────────────────────────────────────────────
-
-  const register = useCallback(
-    async (email: string, password: string): Promise<void> => {
-      dispatch({ type: "AUTH_LOADING" });
-
-      try {
-        // Self-registration always creates VIEWER accounts.
-        // The access token comes in the JSON body; refresh token is an HttpOnly cookie.
-        const tokenResponse = await auth.register(email, password);
-        setAccessToken(tokenResponse.access_token);
-
-        // Fetch the user profile
-        const user = await auth.me();
-
-        dispatch({ type: "AUTH_SUCCESS", user });
-        navigate("/", { replace: true });
-      } catch (error) {
-        dispatch({ type: "AUTH_FAILURE" });
-        throw error;
-      }
-    },
-    [navigate],
-  );
-
   // ── logout() ─────────────────────────────────────────────────────────────
 
   const logout = useCallback(() => {
@@ -233,11 +210,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated: state.isAuthenticated,
       isLoading: state.isLoading,
       login,
-      register,
       logout,
       hasRole,
     }),
-    [state.user, state.isAuthenticated, state.isLoading, login, register, logout, hasRole],
+    [state.user, state.isAuthenticated, state.isLoading, login, logout, hasRole],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
