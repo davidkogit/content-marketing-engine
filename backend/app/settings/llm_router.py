@@ -11,6 +11,7 @@ All endpoints require ``SUPER_ADMIN`` role.
 
 
 import logging
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -72,9 +73,13 @@ async def get_llm_config(
     config = await get_active_llm_config(db)
 
     if config is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active LLM configuration found. Configure a provider first.",
+        return LLMConfigResponse(
+            provider="openai",
+            model="",
+            api_base_url=None,
+            masked_api_key="",
+            is_active=False,
+            created_at=datetime.min,
         )
 
     decrypted = decrypt_api_key(config.api_key_encrypted)
