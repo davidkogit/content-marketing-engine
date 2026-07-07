@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 # ── Supported Providers ─────────────────────────────────────────────────────
 
 SUPPORTED_PROVIDERS: set[str] = {"openai", "anthropic"}
-"""Set of valid provider identifiers accepted by the settings API."""
+"""Set of valid provider identifiers. OpenRouter and compatible APIs use 'openai'."""
 
 
 # ── Request Schemas ─────────────────────────────────────────────────────────
@@ -44,8 +44,16 @@ class LLMConfigUpdateRequest(BaseModel):
     )
     api_base_url: str | None = Field(
         default=None,
-        description="Optional custom API base URL (e.g. https://openrouter.ai/api/v1). Uses provider default if empty.",
+        description="Optional custom API base URL (e.g. https://openrouter.ai/api/v1).",
     )
+
+    @field_validator("api_base_url")
+    @classmethod
+    def normalize_api_base_url(cls, v: str | None) -> str | None:
+        """Convert empty string to None."""
+        if v is not None and v.strip() == "":
+            return None
+        return v
 
     @field_validator("provider")
     @classmethod
