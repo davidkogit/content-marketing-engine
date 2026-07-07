@@ -33,7 +33,6 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import type { UserRole } from "@/types/user"
-import { UserRole as UserRoleEnum } from "@/types/user"
 
 // ── Navigation Item Definition ───────────────────────────────────────────
 

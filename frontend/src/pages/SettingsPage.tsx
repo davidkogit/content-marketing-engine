@@ -18,7 +18,6 @@ import { LlmSettingsTab } from "@/components/settings/llm-settings-tab";
 import { UsersTab } from "@/components/settings/users-tab";
 import { BrandRulesTab } from "@/components/settings/brand-rules-tab";
 import { useSettings } from "@/hooks/use-settings";
-import { useAuth } from "@/hooks/use-auth";
 import { auth } from "@/lib/api-endpoints";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
