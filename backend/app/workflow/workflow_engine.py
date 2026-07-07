@@ -135,7 +135,7 @@ class WorkflowEngine:
 
     def can_transition(
         self,
-        product: Product,
+        product: "Product",
         from_stage: WorkflowStage,
         to_stage: WorkflowStage,
         user_role: UserRole,
@@ -193,7 +193,7 @@ class WorkflowEngine:
         user: User,
         *,
         comment: str | None = None,
-    ) -> Product:
+    ) -> "Product":
         """Validate and execute a workflow stage transition.
 
         Performs the following steps atomically (within the caller's
