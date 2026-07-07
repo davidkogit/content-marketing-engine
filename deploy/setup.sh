@@ -281,8 +281,8 @@ build_frontend() {
         return
     fi
 
-    log_info "Installing frontend dependencies (npm ci) …"
-    (cd "$frontend_dir" && npm ci --production=false)
+    log_info "Installing frontend dependencies (npm install) …"
+    (cd "$frontend_dir" && npm install)
 
     log_info "Building frontend (npm run build) …"
     (cd "$frontend_dir" && npm run build)
