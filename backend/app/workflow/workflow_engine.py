@@ -187,10 +187,10 @@ class WorkflowEngine:
 
     async def transition(
         self,
-        product: Product,
-        to_stage: WorkflowStage,
-        user: User,
         db: AsyncSession,
+        product: "Product",
+        target: WorkflowStage,
+        user: User,
         *,
         comment: str | None = None,
     ) -> Product:
