@@ -1,0 +1,135 @@
+# ==========================================================================
+# Content Marketing Engine — Production Caddyfile
+#
+# Serves static React frontend + reverse proxies API to FastAPI backend.
+# Auto HTTPS via Let's Encrypt. Requires Caddy v2.7+.
+#
+# Prerequisites:
+#   - Caddy v2.7+ installed (system package or xcaddy build)
+#   - caddy-ratelimit plugin: https://github.com/mholt/caddy-ratelimit
+#     Install: xcaddy build --with github.com/mholt/caddy-ratelimit
+#   - DNS A/AAAA record pointing to this server
+#   - Ports 80 + 443 open for Let's Encrypt HTTP-01 challenge
+#   - FastAPI backend running on localhost:8000
+#   - Frontend built to /app/frontend/dist
+#
+# Environment variables (set in systemd or shell):
+#   DOMAIN     — public domain name (e.g. content.example.com)
+#   TLS_EMAIL  — email for Let's Encrypt notifications
+#
+# Usage:
+#   caddy run --config /etc/caddy/Caddyfile
+#   caddy reload --config /etc/caddy/Caddyfile  (zero-downtime)
+# ==========================================================================
+
+# ── Global Options ────────────────────────────────────────────────────
+{
+    # Required for caddy-ratelimit plugin directive ordering.
+    # The rate_limit handler must execute before auth/respond handlers.
+    order rate_limit before basicauth
+
+    # Grace period for zero-downtime reloads.
+    # On reload, Caddy waits up to 30s for live connections (including
+    # WebSockets) to drain naturally before force-closing stale ones.
+    grace_period 30s
+}
+
+# ── Site Block ────────────────────────────────────────────────────────
+{$DOMAIN:localhost} {
+
+    # ══════════════════════════════════════════════════════════════════
+    # TLS — Auto HTTPS via Let's Encrypt
+    # ══════════════════════════════════════════════════════════════════
+    # Caddy auto-provisions certificates. Uncomment and set TLS_EMAIL
+    # env var for production ACME account registration.
+    # tls {$TLS_EMAIL}
+
+    # ══════════════════════════════════════════════════════════════════
+    # Compression
+    # ══════════════════════════════════════════════════════════════════
+    encode zstd gzip
+
+    # ══════════════════════════════════════════════════════════════════
+    # Access Logging — JSON to stdout for log aggregation
+    # ══════════════════════════════════════════════════════════════════
+    log {
+        output stdout
+        format json
+    }
+
+    # ══════════════════════════════════════════════════════════════════
+    # Security Headers — applied to ALL responses
+    # ══════════════════════════════════════════════════════════════════
+    header {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin"
+        # Hide Caddy version from Server header
+        -Server
+    }
+
+    # ══════════════════════════════════════════════════════════════════
+    # Health Check — bypasses rate limiting and auth (evaluated first)
+    # ══════════════════════════════════════════════════════════════════
+    handle /health {
+        reverse_proxy localhost:8000
+    }
+
+    # ══════════════════════════════════════════════════════════════════
+    # API Routes — rate limited: 100 req/s per IP
+    # ══════════════════════════════════════════════════════════════════
+    handle /api/* {
+        rate_limit {
+            zone api {
+                key {remote_host}
+                events 100
+                window 1s
+            }
+        }
+        reverse_proxy localhost:8000 {
+            # Forward original protocol for proper redirect URLs
+            header_up X-Forwarded-Proto {scheme}
+            # WebSocket: flush immediately for real-time bidirectional comms
+            flush_interval -1
+        }
+    }
+
+    # ══════════════════════════════════════════════════════════════════
+    # Auth Routes — rate limited: 100 req/s per IP
+    # ══════════════════════════════════════════════════════════════════
+    handle /auth/* {
+        rate_limit {
+            zone auth {
+                key {remote_host}
+                events 100
+                window 1s
+            }
+        }
+        reverse_proxy localhost:8000 {
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # ══════════════════════════════════════════════════════════════════
+    # Backend Docs / OpenAPI — no rate limiting needed
+    # ══════════════════════════════════════════════════════════════════
+    handle /docs* {
+        reverse_proxy localhost:8000
+    }
+
+    handle /openapi.json {
+        reverse_proxy localhost:8000
+    }
+
+    # ══════════════════════════════════════════════════════════════════
+    # Static Frontend — SPA with client-side routing fallback
+    # ══════════════════════════════════════════════════════════════════
+    handle {
+        root * /app/frontend/dist
+        encode zstd gzip
+        # SPA fallback: serve index.html for any path that doesn't
+        # match a static file (enables React Router client-side routing)
+        try_files {path} /index.html
+        file_server
+    }
+}

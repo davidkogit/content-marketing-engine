@@ -1,0 +1,42 @@
+[Unit]
+Description=Content Marketing Engine - FastAPI Backend
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=content-engine
+Group=content-engine
+WorkingDirectory=/opt/content-marketing-engine/backend
+EnvironmentFile=/opt/content-marketing-engine/.env
+ExecStart=/opt/content-marketing-engine/backend/.venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --workers 4 \
+    --proxy-headers \
+    --log-level info
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=content-engine
+
+# Security hardening — least privilege
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/content-marketing-engine/backend/data
+ReadOnlyPaths=/opt/content-marketing-engine
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Ensure clean termination
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
