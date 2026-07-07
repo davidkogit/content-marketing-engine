@@ -6,7 +6,7 @@
  * Each stage has valid forward/backward transitions with role gates.
  */
 
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   ArrowRight,
@@ -32,11 +32,15 @@ interface WorkflowActionsProps {
   isTransitioning?: boolean;
 }
 
-/** Defines which transitions are available from each stage. */
-const transitions: Record<
-  string,
-  { to: string; label: string; icon: React.ReactNode; variant?: "default" | "outline" | "secondary"; requiresApprovalGate?: boolean }
->[] = {
+type TransitionDef = {
+  to: string;
+  label: string;
+  icon: React.ReactNode;
+  variant?: NonNullable<ButtonProps["variant"]>;
+  requiresApprovalGate?: boolean;
+};
+
+const transitions: Record<string, TransitionDef[]> = {
   ingest: [
     {
       to: WorkflowStage.DRAFT,
@@ -88,7 +92,7 @@ export default function WorkflowActions({
   onTransition,
   isTransitioning = false,
 }: WorkflowActionsProps) {
-  const stageTransitions: { to: string; label: string; icon: React.ReactNode; variant?: string; requiresApprovalGate?: boolean }[] = transitions[currentStage] ?? [];
+  const stageTransitions: TransitionDef[] = transitions[currentStage] ?? [];
 
   if (stageTransitions.length === 0) return null;
 
@@ -97,7 +101,7 @@ export default function WorkflowActions({
       <span className="text-xs text-muted-foreground font-medium">
         Actions:
       </span>
-      {stageTransitions.map((t: typeof stageTransitions[number]) => {
+      {stageTransitions.map((t) => {
         // Gate checks
         let disabled = isTransitioning || !canTransition;
         let tooltipText = "";
