@@ -39,9 +39,8 @@ class LLMConfigUpdateRequest(BaseModel):
         description="Model identifier (e.g. 'gpt-4o', 'claude-3-opus-20240229').",
     )
     api_key: str = Field(
-        ...,
-        min_length=1,
-        description="Plain-text API key — encrypted at rest, never returned in responses.",
+        default="",
+        description="API key. Leave blank to keep the existing stored key.",
     )
     api_base_url: str | None = Field(
         default=None,

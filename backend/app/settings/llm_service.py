@@ -113,27 +113,23 @@ async def update_llm_config(
     api_key: str,
     api_base_url: str | None = None,
 ) -> LLMConfig:
-    """Persist a new active LLM configuration, encrypting the API key first.
+    """Persist a new active LLM configuration.
 
-    Deactivates any previously active configuration, creates a new row,
-    and invalidates the in-memory cache so the next read fetches fresh data.
-
-    Args:
-        db: An active async database session.
-        provider: ``openai`` or ``anthropic``.
-        model: Model identifier (e.g. ``gpt-4o``).
-        api_key: Plain-text API key — encrypted before storage.
-
-    Returns:
-        The newly created (and flushed) ``LLMConfig`` row.
-
-    Raises:
-        ValueError: If *provider* is not a supported ``LLMProvider``.
+    If *api_key* is blank, the previously stored encrypted key is reused.
     """
+    # If api_key is blank, reuse the existing stored key
+    actual_key = api_key
+    if not actual_key.strip():
+        existing = await LLMConfigService.get_active_config(db)
+        if existing:
+            actual_key = decrypt_api_key(existing.api_key_encrypted) or ""
+        if not actual_key:
+            raise ValueError("No existing API key found and none provided.")
+
     config = await LLMConfigService.set_config(
         db,
         provider=provider,
-        api_key=api_key,
+        api_key=actual_key,
         model=model,
         api_base_url=api_base_url,
         make_active=True,
