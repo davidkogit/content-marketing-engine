@@ -12,12 +12,13 @@
  */
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCallback } from "react";
 import { RoleGuard } from "@/components/auth/role-guard";
 import { LlmSettingsTab } from "@/components/settings/llm-settings-tab";
 import { UsersTab } from "@/components/settings/users-tab";
 import { BrandRulesTab } from "@/components/settings/brand-rules-tab";
 import { useSettings } from "@/hooks/use-settings";
-import type { RuleName } from "@/types";
+import type { RuleName, UserRole } from "@/types";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,22 @@ export default function SettingsPage() {
       api_key: body.apiKey,
     });
   };
+
+  /** Bridge: UsersTab expects (email, role) → Promise<boolean> */
+  const handleInviteUser = useCallback(
+    async (email: string, role: UserRole): Promise<boolean> => {
+      return inviteUser({ email, role });
+    },
+    [inviteUser],
+  );
+
+  /** Bridge: UsersTab expects (userId, role) → Promise<boolean> */
+  const handleChangeUserRole = useCallback(
+    async (userId: number, role: UserRole): Promise<boolean> => {
+      return changeUserRole(userId, { role });
+    },
+    [changeUserRole],
+  );
 
   return (
     <RoleGuard
@@ -97,8 +114,8 @@ export default function SettingsPage() {
               isLoading={state.users.isLoading}
               isInviting={state.users.isInviting}
               error={state.users.error}
-              onInvite={inviteUser}
-              onChangeRole={changeUserRole}
+              onInvite={handleInviteUser}
+              onChangeRole={handleChangeUserRole}
               onDeactivate={deactivateUser}
             />
           </TabsContent>

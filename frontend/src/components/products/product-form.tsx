@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Category, Segment, ProductCreate, ProductUpdate } from "@/types";
+import type { Category, Segment, ProductCreate } from "@/types";
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 

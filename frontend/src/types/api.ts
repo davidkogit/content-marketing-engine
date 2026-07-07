@@ -6,7 +6,7 @@
  *   auth/, products/, workflow/, llm/, export/, settings/
  */
 
-import type { UserRole } from "./user";
+import type { UserRole, UserListItem } from "./user";
 
 // ── Auth Request/Response ────────────────────────────────────────────────────
 
@@ -219,13 +219,7 @@ export interface ChangeRoleRequest {
   role: UserRole;
 }
 
-export interface UserListItem {
-  id: number;
-  email: string;
-  role: string;
-  is_active: boolean;
-  created_at: string;
-}
+// ── Settings: Brand Rules ───────────────────────────────────────────────────
 
 export interface UserListResponse {
   items: UserListItem[];
@@ -236,7 +230,7 @@ export interface UserActionResponse {
   message: string;
   user_id: number;
   email: string;
-  role: string;
+  role: UserRole;
   is_active: boolean;
 }
 

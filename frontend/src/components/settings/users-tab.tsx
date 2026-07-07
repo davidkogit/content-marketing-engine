@@ -11,7 +11,7 @@
  */
 
 import * as React from "react";
-import { Loader2, Plus, UserX } from "lucide-react";
+import { Plus, UserX } from "lucide-react";
 import {
   Card,
   CardContent,

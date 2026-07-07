@@ -50,32 +50,6 @@ export interface UseKanbanReturn {
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 /**
- * Build the set of columns from a flat products list, ensuring canonical
- * stage ordering and including empty columns.
- */
-function buildColumns(products: BoardProductItem[]): BoardColumn[] {
-  const grouped = new Map<string, BoardProductItem[]>();
-
-  for (const stage of STAGE_ORDER) {
-    grouped.set(stage, []);
-  }
-
-  for (const product of products) {
-    const stage = product.workflow_stage;
-    const list = grouped.get(stage);
-    if (list) {
-      list.push(product);
-    }
-  }
-
-  return STAGE_ORDER.map((stage) => ({
-    stage,
-    count: grouped.get(stage)!.length,
-    products: grouped.get(stage)!,
-  }));
-}
-
-/**
  * Find a product across all columns. Returns the stage and product,
  * or null if not found.
  */

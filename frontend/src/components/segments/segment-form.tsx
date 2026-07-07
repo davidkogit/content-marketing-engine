@@ -99,7 +99,7 @@ export function SegmentForm({
         result = await segments.update(segment.id, payload)
         toast({ title: "Segment updated", variant: "success" })
       } else {
-        result = await segments.create(payload)
+        result = await segments.create(payload as SegmentCreate)
         toast({ title: "Segment created", variant: "success" })
       }
       onSuccess(result)

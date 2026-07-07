@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   ArrowRight,
-  ArrowLeft,
   CheckCircle,
   RotateCcw,
   FileDown,
@@ -38,14 +37,14 @@ const transitions: Record<
   string,
   { to: string; label: string; icon: React.ReactNode; variant?: "default" | "outline" | "secondary"; requiresApprovalGate?: boolean }
 >[] = {
-  [WorkflowStage.INGEST]: [
+  ingest: [
     {
       to: WorkflowStage.DRAFT,
       label: "Move to Draft",
       icon: <ArrowRight className="h-4 w-4" />,
     },
   ],
-  [WorkflowStage.DRAFT]: [
+  draft: [
     {
       to: WorkflowStage.REVIEW,
       label: "Submit for Review",
@@ -53,7 +52,7 @@ const transitions: Record<
       variant: "default",
     },
   ],
-  [WorkflowStage.REVIEW]: [
+  review: [
     {
       to: WorkflowStage.APPROVED,
       label: "Approve",
@@ -69,14 +68,14 @@ const transitions: Record<
       requiresApprovalGate: true,
     },
   ],
-  [WorkflowStage.APPROVED]: [
+  approved: [
     {
       to: WorkflowStage.EXPORTED,
       label: "Mark as Exported",
       icon: <FileDown className="h-4 w-4" />,
     },
   ],
-  [WorkflowStage.EXPORTED]: [],
+  exported: [],
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -89,7 +88,7 @@ export default function WorkflowActions({
   onTransition,
   isTransitioning = false,
 }: WorkflowActionsProps) {
-  const stageTransitions = transitions[currentStage] ?? [];
+  const stageTransitions: { to: string; label: string; icon: React.ReactNode; variant?: string; requiresApprovalGate?: boolean }[] = transitions[currentStage] ?? [];
 
   if (stageTransitions.length === 0) return null;
 
@@ -98,7 +97,7 @@ export default function WorkflowActions({
       <span className="text-xs text-muted-foreground font-medium">
         Actions:
       </span>
-      {stageTransitions.map((t, idx) => {
+      {stageTransitions.map((t: typeof stageTransitions[number]) => {
         // Gate checks
         let disabled = isTransitioning || !canTransition;
         let tooltipText = "";

@@ -21,7 +21,7 @@ import type {
   InviteUserRequest,
   ChangeRoleRequest,
   RuleName,
-  RuleContentResponse,
+  UserRole,
 } from "@/types";
 
 // ── State Shape ──────────────────────────────────────────────────────────────
@@ -318,7 +318,7 @@ export function useSettings() {
         const res = await settingsUsers.list();
         dispatch({
           type: "USERS_LOADED",
-          items: res.items,
+          items: res.items.map((item) => ({ ...item, role: item.role as UserRole })),
           total: res.total,
         });
       } catch (err) {
@@ -426,7 +426,7 @@ export function useSettings() {
           user: {
             id: res.user_id,
             email: res.email,
-            role: res.role,
+            role: res.role as UserRole,
             is_active: res.is_active,
             created_at: "",
           },

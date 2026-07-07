@@ -22,7 +22,6 @@ import type {
   ClaimUpdate,
   ProductDocument,
   DocumentCreate,
-  ProductVersion,
 } from "@/types";
 
 interface ProductDetailState {
