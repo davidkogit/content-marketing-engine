@@ -117,6 +117,8 @@ async def put_llm_config(
         HTTPException 403: If the caller is not a super admin.
     """
     try:
+        logger.info("Saving LLM config: provider=%s model=%s base_url=%s key_len=%d",
+                     body.provider, body.model, body.api_base_url, len(body.api_key))
         config = await update_llm_config(
             db,
             provider=body.provider,
